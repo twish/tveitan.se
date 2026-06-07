@@ -89,6 +89,9 @@ func loadFonts(ar *figlet4go.AsciiRender) error {
 		if err != nil {
 			return err
 		}
+		// Some .flf ship with CRLF; a stray \r corrupts figlet4go's endmark
+		// parsing and the glyphs render stacked vertically. Normalize to LF.
+		data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 		name := strings.ToLower(strings.TrimSuffix(e.Name(), ".flf"))
 		if err := ar.LoadBindataFont(data, name); err != nil {
 			return fmt.Errorf("load font %s: %w", name, err)
