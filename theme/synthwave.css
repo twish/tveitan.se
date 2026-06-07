@@ -68,16 +68,23 @@ body {
 	max-width: 760px;
 	margin: 0 auto;
 	padding: 8vh 24px 12vh;
-	container-type: inline-size;
 }
 
 .banner {
-	/* Scale the font so the widest line (--cols chars) fits the column.
-	   A monospace char is ~0.6em wide, so cols * 0.6 * fontsize must be
-	   <= container width (100cqw). Capped at 1rem; never overflows. */
-	--fit: calc(160cqw / var(--cols, 28));
-	font-size: min(1rem, var(--fit));
-	margin: 0 0 1.5rem;
+	/* Hero: break out of the text column to span the screen, centered, and
+	   scale the font so the widest line (--cols chars) fills ~90vw and never
+	   causes a scrollbar. A monospace char is ~0.6em wide, so the longest line
+	   is cols * 0.6 * fontsize; with fontsize = 150vw/cols that is ~90vw.
+	   Capped at 7rem so short banners don't get absurd on ultrawide. */
+	--fit: calc(150vw / var(--cols, 28));
+	font-size: min(7rem, var(--fit));
+	width: 100vw;
+	max-width: 100vw;
+	margin: 0 0 1.5rem 50%;
+	transform: translateX(-50%);
+	padding-inline: 2vw;
+	box-sizing: border-box;
+	text-align: center;
 	font-family: var(--mono);
 	line-height: 1.05;
 	white-space: pre;
