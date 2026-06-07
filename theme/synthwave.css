@@ -68,14 +68,20 @@ body {
 	max-width: 760px;
 	margin: 0 auto;
 	padding: 8vh 24px 12vh;
+	container-type: inline-size;
 }
 
 .banner {
+	/* Scale the font so the widest line (--cols chars) fits the column.
+	   A monospace char is ~0.6em wide, so cols * 0.6 * fontsize must be
+	   <= container width (100cqw). Capped at 1rem; never overflows. */
+	--fit: calc(160cqw / var(--cols, 28));
+	font-size: min(1rem, var(--fit));
 	margin: 0 0 1.5rem;
 	font-family: var(--mono);
 	line-height: 1.05;
 	white-space: pre;
-	overflow-x: auto;
+	overflow: hidden;
 	background: linear-gradient(180deg, var(--neon-cyan), var(--neon-pink));
 	-webkit-background-clip: text;
 	background-clip: text;

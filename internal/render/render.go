@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/mbndr/figlet4go"
 	"github.com/twish/tveitan.se/internal/content"
@@ -38,6 +39,7 @@ type navItem struct {
 type pageData struct {
 	Title   string
 	Banner  string
+	Cols    int // widest banner line; CSS scales the font so it never overflows
 	Body    template.HTML
 	CSSHref string
 	Nav     []navItem
@@ -99,10 +101,12 @@ func (r *Renderer) Build(docs []content.Doc) (*Built, error) {
 		if err != nil {
 			return nil, fmt.Errorf("render %s: %w", doc.Slug, err)
 		}
+		banner := r.banner(doc)
 		var buf bytes.Buffer
 		data := pageData{
 			Title:   doc.Title,
-			Banner:  r.banner(doc),
+			Banner:  banner,
+			Cols:    maxLineLen(banner),
 			Body:    body,
 			CSSHref: cssHref,
 			Nav:     nav,
@@ -147,6 +151,18 @@ func buildNav(docs []content.Doc) []navItem {
 	}
 	sort.Slice(nav, func(i, j int) bool { return nav[i].Title < nav[j].Title })
 	return nav
+}
+
+// maxLineLen returns the widest line in runes, so the template can tell CSS how
+// many columns the banner needs and the font can be scaled to fit.
+func maxLineLen(s string) int {
+	max := 1
+	for line := range strings.SplitSeq(s, "\n") {
+		if n := len([]rune(line)); n > max {
+			max = n
+		}
+	}
+	return max
 }
 
 func sha256Sum(b []byte) []byte {
