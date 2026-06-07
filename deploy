@@ -9,7 +9,8 @@
 set -euo pipefail
 
 HOST=T
-REMOTE=/opt/tveitan.se
+# Home-dir path: tveitan owns it (no sudo). /opt is root-owned on this box.
+REMOTE=tveitan.se
 
 ssh "$HOST" "mkdir -p $REMOTE"
 
@@ -18,8 +19,10 @@ rsync -az --delete content theme "$HOST:$REMOTE/"
 
 if [[ "${1:-}" == "--build" ]]; then
   echo ">> syncing build context"
+  # Anchor excludes with a leading slash so they match only the top-level
+  # dirs, not nested paths like internal/content.
   rsync -az --delete \
-    --exclude '.git' --exclude 'content' --exclude 'theme' \
+    --exclude '/.git' --exclude '/content' --exclude '/theme' \
     ./ "$HOST:$REMOTE/"
   echo ">> building + restarting container"
   ssh "$HOST" "cd $REMOTE && docker compose up -d --build"
