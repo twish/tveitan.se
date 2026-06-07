@@ -17,9 +17,11 @@ Create a new post for tveitan.se as a markdown file under `content/`.
 3. **Pick a slug.** Lowercase, hyphenated, no date prefix:
    `content/posts/<slug>.md`. Check it doesn't already exist.
 4. **Write the frontmatter** per the contract in voice.md. Set `date` to today,
-   `order` to one more than the highest existing post `order`. Omit `banner`
-   unless the title deserves hand-drawn ascii — if so, invoke the `asciify`
-   skill to generate it.
+   `order` to one more than the highest existing post `order`. Pick a random
+   `style` in 0–39 and write it in, so the heading look is frozen at creation
+   (the user can change the number later — `/styles` shows them all). Omit
+   `banner` unless the title deserves hand-drawn ascii — if so, invoke the
+   `asciify` skill to generate it.
 5. **Write the body.** Markdown. Open with the point, not a warm-up. Length
    follows substance. Real code only.
 6. **Don't deploy.** Writing the file is the whole job — the running server

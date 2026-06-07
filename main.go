@@ -25,9 +25,13 @@ func main() {
 	contentDir := env("CONTENT_DIR", "./content")
 	themeDir := env("THEME_DIR", "./theme")
 
+	renderer, err := render.New(themeDir)
+	if err != nil {
+		log.Fatal(err)
+	}
 	site := &site{
 		source:   content.NewFSSource(contentDir),
-		renderer: render.New(themeDir),
+		renderer: renderer,
 	}
 
 	mux := http.NewServeMux()

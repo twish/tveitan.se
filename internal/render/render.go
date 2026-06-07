@@ -9,6 +9,7 @@ package render
 import (
 	"bytes"
 	"crypto/sha256"
+	"embed"
 	"encoding/hex"
 	"fmt"
 	"html/template"
@@ -22,6 +23,9 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 )
+
+//go:embed fonts/*.flf
+var fontFS embed.FS
 
 // Built is one fully rendered snapshot of the site for a given content+theme
 // version. Pages are keyed by slug. Everything here is immutable once returned.
@@ -39,7 +43,11 @@ type navItem struct {
 type pageData struct {
 	Title   string
 	Banner  string
-	Cols    int // widest banner line; CSS scales the font so it never overflows
+	Cols    int    // widest banner line; CSS scales the font so it never overflows
+	G1      string // banner gradient start color
+	G2      string // banner gradient end color
+	Align   string // text-align placement: left | center | right
+	Wide    bool   // fill ~90vw instead of natural capped size
 	Body    template.HTML
 	CSSHref string
 	Nav     []navItem
@@ -52,16 +60,41 @@ type Renderer struct {
 	ascii    *figlet4go.AsciiRender
 }
 
-// New builds a renderer that reads its theme from themeDir.
-func New(themeDir string) *Renderer {
+// New builds a renderer that reads its theme from themeDir and loads the
+// embedded figlet fonts.
+func New(themeDir string) (*Renderer, error) {
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM, extension.Typographer),
 	)
+	ascii := figlet4go.NewAsciiRender()
+	if err := loadFonts(ascii); err != nil {
+		return nil, err
+	}
 	return &Renderer{
 		themeDir: themeDir,
 		md:       md,
-		ascii:    figlet4go.NewAsciiRender(),
+		ascii:    ascii,
+	}, nil
+}
+
+// loadFonts registers every embedded *.flf under its lowercased file stem, so
+// styles can ask for "slant", "doom", etc.
+func loadFonts(ar *figlet4go.AsciiRender) error {
+	entries, err := fontFS.ReadDir("fonts")
+	if err != nil {
+		return err
 	}
+	for _, e := range entries {
+		data, err := fontFS.ReadFile("fonts/" + e.Name())
+		if err != nil {
+			return err
+		}
+		name := strings.ToLower(strings.TrimSuffix(e.Name(), ".flf"))
+		if err := ar.LoadBindataFont(data, name); err != nil {
+			return fmt.Errorf("load font %s: %w", name, err)
+		}
+	}
+	return nil
 }
 
 // ThemeVersion hashes the theme files so a theme edit busts the render cache
@@ -95,29 +128,49 @@ func (r *Renderer) Build(docs []content.Doc) (*Built, error) {
 	}
 
 	nav := buildNav(docs)
-	pages := make(map[string]string, len(docs))
+	pages := make(map[string]string, len(docs)+1)
 	for _, doc := range docs {
 		body, err := r.markdown(doc.Body)
 		if err != nil {
 			return nil, fmt.Errorf("render %s: %w", doc.Slug, err)
 		}
-		banner := r.banner(doc)
-		var buf bytes.Buffer
-		data := pageData{
-			Title:   doc.Title,
-			Banner:  banner,
-			Cols:    maxLineLen(banner),
-			Body:    body,
-			CSSHref: cssHref,
-			Nav:     nav,
+		page, err := r.page(tmpl, doc, body, cssHref, nav)
+		if err != nil {
+			return nil, fmt.Errorf("render %s: %w", doc.Slug, err)
 		}
-		if err := tmpl.Execute(&buf, data); err != nil {
-			return nil, fmt.Errorf("execute %s: %w", doc.Slug, err)
-		}
-		pages[doc.Slug] = buf.String()
+		pages[doc.Slug] = page
 	}
 
+	gallery, err := r.page(tmpl, content.Doc{Slug: "styles", Title: "styles"}, r.galleryBody(), cssHref, nav)
+	if err != nil {
+		return nil, fmt.Errorf("render gallery: %w", err)
+	}
+	pages["styles"] = gallery
+
 	return &Built{Pages: pages, CSS: css, CSSHref: cssHref}, nil
+}
+
+// page renders one doc through the layout with its frozen style applied.
+func (r *Renderer) page(tmpl *template.Template, doc content.Doc, body template.HTML, cssHref string, nav []navItem) (string, error) {
+	st := selectStyle(doc)
+	banner := r.banner(doc, st)
+	data := pageData{
+		Title:   doc.Title,
+		Banner:  banner,
+		Cols:    maxLineLen(banner),
+		G1:      st.Palette.g1,
+		G2:      st.Palette.g2,
+		Align:   st.Align,
+		Wide:    st.Wide,
+		Body:    body,
+		CSSHref: cssHref,
+		Nav:     nav,
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 func (r *Renderer) markdown(src string) (template.HTML, error) {
@@ -129,16 +182,45 @@ func (r *Renderer) markdown(src string) (template.HTML, error) {
 }
 
 // banner returns the ascii heading: a verbatim frontmatter banner if the author
-// hand-drew one, otherwise the title run through figlet.
-func (r *Renderer) banner(doc content.Doc) string {
+// hand-drew one, otherwise the title run through the style's figlet font.
+func (r *Renderer) banner(doc content.Doc, st bannerStyle) string {
 	if doc.Banner != "" {
 		return doc.Banner
 	}
-	art, err := r.ascii.Render(doc.Title)
+	return r.figlet(doc.Title, st.Font)
+}
+
+func (r *Renderer) figlet(text, font string) string {
+	opt := figlet4go.NewRenderOptions()
+	opt.FontName = font
+	art, err := r.ascii.RenderOpts(text, opt)
 	if err != nil {
-		return doc.Title
+		return text
 	}
-	return art
+	return strings.Trim(art, "\n")
+}
+
+// galleryBody builds the /styles page: every style rendered with sample text,
+// labelled by index and name, so a specific look can be picked by number.
+func (r *Renderer) galleryBody() template.HTML {
+	const sample = "tveitan"
+	var b strings.Builder
+	b.WriteString(`<p>Every heading style, frozen. Set <code>style: N</code> (or the name) in a page's frontmatter to pin one; leave it out and it's derived from the slug.</p>`)
+	b.WriteString(`<div class="gallery">`)
+	for i, st := range styles {
+		art := r.figlet(sample, st.Font)
+		placement := st.Align
+		if st.Wide {
+			placement = "wide"
+		}
+		fmt.Fprintf(&b,
+			`<div class="style-card"><div class="style-meta"><span class="idx">%02d</span> %s · %s</div>`+
+				`<pre class="banner" style="--cols:%d;--g1:%s;--g2:%s">%s</pre></div>`,
+			i, template.HTMLEscapeString(st.Name), placement,
+			maxLineLen(art), st.Palette.g1, st.Palette.g2, template.HTMLEscapeString(art))
+	}
+	b.WriteString(`</div>`)
+	return template.HTML(b.String())
 }
 
 func buildNav(docs []content.Doc) []navItem {

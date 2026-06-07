@@ -24,6 +24,7 @@ type Doc struct {
 	Slug   string // url path without extension, e.g. "index" or "posts/hello"
 	Title  string
 	Banner string // literal ascii art to use verbatim; empty means figlet the title
+	Style  string // frozen heading style: index or name; empty means derive from slug
 	Date   string
 	Order  int  // sort weight in navigation; lower comes first
 	Draft  bool // excluded from List and Nav
@@ -44,9 +45,12 @@ type Source interface {
 type frontmatter struct {
 	Title  string `yaml:"title"`
 	Banner string `yaml:"banner"`
-	Date   string `yaml:"date"`
-	Order  int    `yaml:"order"`
-	Draft  bool   `yaml:"draft"`
+	// Style accepts either an int index (style: 23) or a name (style: slant-sunset),
+	// so it's read loosely and normalized to a string.
+	Style  any `yaml:"style"`
+	Date   string      `yaml:"date"`
+	Order  int         `yaml:"order"`
+	Draft  bool        `yaml:"draft"`
 }
 
 // FSSource serves markdown from a directory tree of *.md files.
@@ -137,11 +141,21 @@ func (s *FSSource) read(path string) (Doc, error) {
 		Slug:   slug,
 		Title:  title,
 		Banner: fm.Banner,
+		Style:  styleString(fm.Style),
 		Date:   fm.Date,
 		Order:  fm.Order,
 		Draft:  fm.Draft,
 		Body:   string(body),
 	}, nil
+}
+
+// styleString normalizes a loosely-typed frontmatter `style` (int or name) to a
+// trimmed string; nil/absent becomes empty.
+func styleString(v any) string {
+	if v == nil {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(v))
 }
 
 // splitFrontmatter peels a leading `---\n…\n---\n` YAML block off the document.
