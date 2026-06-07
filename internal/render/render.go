@@ -141,7 +141,8 @@ func (r *Renderer) Build(docs []content.Doc) (*Built, error) {
 		pages[doc.Slug] = page
 	}
 
-	gallery, err := r.page(tmpl, content.Doc{Slug: "styles", Title: "styles"}, r.galleryBody(), cssHref, nav)
+	galleryDoc := content.Doc{Slug: "styles", Title: "styles", Style: "slant-cyan-pink"}
+	gallery, err := r.page(tmpl, galleryDoc, r.galleryBody(), cssHref, nav)
 	if err != nil {
 		return nil, fmt.Errorf("render gallery: %w", err)
 	}
