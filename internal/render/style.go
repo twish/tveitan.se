@@ -29,6 +29,10 @@ var fonts = []string{"standard", "slant", "small", "big", "doom", "ogre", "shado
 // positions cycle across the style list: three placements plus a full-width fill.
 var positions = []string{"left", "center", "right", "wide"}
 
+// gradient angles cycle too: top-to-bottom is the default synthwave look; a
+// third land on a diagonal for variety.
+var angles = []string{"180deg", "180deg", "135deg"}
+
 // bannerStyle is one frozen look: a font, a palette, and a placement. The list
 // is a stable 8×5 grid (40 styles); a heading's style index never moves.
 type bannerStyle struct {
@@ -37,6 +41,7 @@ type bannerStyle struct {
 	Palette palette
 	Align   string // text-align for the placement: left | center | right
 	Wide    bool   // fill ~90vw instead of sitting at natural capped size
+	Angle   string // gradient direction, e.g. 180deg (top-bottom) or 135deg
 }
 
 var styles = buildStyles()
@@ -59,6 +64,7 @@ func buildStyles() []bannerStyle {
 				Palette: p,
 				Align:   align,
 				Wide:    wide,
+				Angle:   angles[i%len(angles)],
 			})
 			i++
 		}

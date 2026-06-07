@@ -46,6 +46,7 @@ type pageData struct {
 	Cols    int    // widest banner line; CSS scales the font so it never overflows
 	G1      string // banner gradient start color
 	G2      string // banner gradient end color
+	Angle   string // banner gradient direction
 	Align   string // text-align placement: left | center | right
 	Wide    bool   // fill ~90vw instead of natural capped size
 	Body    template.HTML
@@ -164,6 +165,7 @@ func (r *Renderer) page(tmpl *template.Template, doc content.Doc, body template.
 		Cols:    maxLineLen(banner),
 		G1:      st.Palette.g1,
 		G2:      st.Palette.g2,
+		Angle:   st.Angle,
 		Align:   st.Align,
 		Wide:    st.Wide,
 		Body:    body,
@@ -219,9 +221,9 @@ func (r *Renderer) galleryBody() template.HTML {
 		}
 		fmt.Fprintf(&b,
 			`<div class="style-card"><div class="style-meta"><span class="idx">%02d</span> %s · %s</div>`+
-				`<pre class="banner" style="--cols:%d;--g1:%s;--g2:%s">%s</pre></div>`,
+				`<pre class="banner" style="--cols:%d;--g1:%s;--g2:%s;--ga:%s">%s</pre></div>`,
 			i, template.HTMLEscapeString(st.Name), placement,
-			maxLineLen(art), st.Palette.g1, st.Palette.g2, template.HTMLEscapeString(art))
+			maxLineLen(art), st.Palette.g1, st.Palette.g2, st.Angle, template.HTMLEscapeString(art))
 	}
 	b.WriteString(`</div>`)
 	return template.HTML(b.String())

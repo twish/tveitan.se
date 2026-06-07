@@ -97,7 +97,7 @@ body {
 	line-height: 1.05;
 	white-space: pre;
 	text-align: left;
-	background: linear-gradient(115deg, var(--g1, var(--neon-cyan)), var(--g2, var(--neon-pink)));
+	background: linear-gradient(var(--ga, 180deg), var(--g1, var(--neon-cyan)), var(--g2, var(--neon-pink)));
 	-webkit-background-clip: text;
 	background-clip: text;
 	color: transparent;
