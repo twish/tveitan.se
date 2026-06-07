@@ -23,8 +23,12 @@ var palettes = []palette{
 	{"amber-pink", "#ffd319", "#ff2e97"},
 }
 
-// figlet fonts embedded under fonts/. Names are lowercased file stems.
-var fonts = []string{"standard", "slant", "small", "big", "doom", "ogre", "shadow", "speed"}
+// figlet fonts embedded under fonts/. Names are lowercased file stems, spanning
+// outline, slant, box-drawing, solid-block, shaded and rounded classes.
+var fonts = []string{
+	"standard", "slant", "doom", "big", "calvin-s",
+	"ansi-shadow", "ansi-regular", "delta-corps-priest-1", "dos-rebel", "bulbhead",
+}
 
 // positions cycle across the style list: three placements plus a full-width fill.
 var positions = []string{"left", "center", "right", "wide"}

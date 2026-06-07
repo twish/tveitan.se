@@ -45,11 +45,11 @@ Every post is a markdown file under `content/` with:
 title: Short, lowercase-ish, no clickbait
 date: YYYY-MM-DD
 order: <int>   # nav/sort weight; lower first
-style: <0-39>  # optional; frozen heading style. Omit to derive from slug.
+style: <0-49>  # optional; frozen heading style. Omit to derive from slug.
 banner: |      # optional verbatim ascii; omit to figlet the title
 ---
 ```
 
-Heading styles (font + synthwave palette + placement) are numbered 0–39.
+Heading styles (font + synthwave palette + placement) are numbered 0–49.
 Browse them at `/styles`. Setting `style:` freezes a page's look; omitting it
 derives a stable style from the slug.
