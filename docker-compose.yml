@@ -1,0 +1,21 @@
+# Runs the site as a container behind the existing Caddy on the VPS, same
+# pattern as tidder. Caddy reaches it by service name over the shared external
+# "web" network and reverse-proxies tveitan.se to tveitan:8080. Markdown and
+# theme are bind-mounted so edits on the VPS go live without rebuilding.
+services:
+  tveitan:
+    image: ghcr.io/twish/tveitan.se:latest
+    build: .
+    container_name: tveitan-web
+    restart: unless-stopped
+    volumes:
+      - ./content:/content:ro
+      - ./theme:/theme:ro
+    networks:
+      - web
+    expose:
+      - "8080"
+
+networks:
+  web:
+    external: true

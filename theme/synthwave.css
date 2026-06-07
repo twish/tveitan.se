@@ -1,0 +1,171 @@
+/* synthwave — neon-on-black, scanlines, glow. Tweak the tokens, the whole
+   mood shifts. This is the look knob; voice.md is the words knob. */
+
+:root {
+	--bg:        #0d0211;
+	--bg-2:      #1a0b2e;
+	--fg:        #f4eafc;
+	--muted:     #9a7bb8;
+	--neon-pink: #ff2e97;
+	--neon-cyan: #2de2e6;
+	--neon-purp: #b967ff;
+	--neon-amber:#ffd319;
+	--glow:      0 0 6px currentColor, 0 0 18px currentColor;
+	--mono:      ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background:
+		radial-gradient(ellipse at 50% -20%, var(--bg-2) 0%, var(--bg) 60%),
+		var(--bg);
+	color: var(--fg);
+	font-family: var(--mono);
+	font-size: 16px;
+	line-height: 1.7;
+	overflow-x: hidden;
+}
+
+/* CRT flicker bars layered over everything */
+.scanlines {
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 9;
+	background: repeating-linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 0,
+		rgba(0, 0, 0, 0) 2px,
+		rgba(0, 0, 0, 0.18) 3px
+	);
+	mix-blend-mode: multiply;
+}
+
+/* perspective neon grid fading toward the horizon */
+.grid {
+	position: fixed;
+	inset: 40% 0 0 0;
+	pointer-events: none;
+	z-index: 0;
+	background-image:
+		linear-gradient(var(--neon-purp) 1px, transparent 1px),
+		linear-gradient(90deg, var(--neon-purp) 1px, transparent 1px);
+	background-size: 40px 40px;
+	transform: perspective(40vh) rotateX(60deg);
+	transform-origin: top center;
+	opacity: 0.10;
+	mask-image: linear-gradient(to bottom, #000 0%, transparent 80%);
+}
+
+.crt {
+	position: relative;
+	z-index: 1;
+	max-width: 760px;
+	margin: 0 auto;
+	padding: 8vh 24px 12vh;
+}
+
+.banner {
+	margin: 0 0 1.5rem;
+	font-family: var(--mono);
+	line-height: 1.05;
+	white-space: pre;
+	overflow-x: auto;
+	background: linear-gradient(180deg, var(--neon-cyan), var(--neon-pink));
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	filter: drop-shadow(0 0 8px rgba(255, 46, 151, 0.45));
+}
+
+nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1.25rem;
+	padding: 0.75rem 0 1.5rem;
+	border-bottom: 1px solid rgba(185, 103, 255, 0.25);
+	margin-bottom: 2rem;
+}
+
+nav a {
+	color: var(--neon-cyan);
+	text-decoration: none;
+	text-transform: lowercase;
+	letter-spacing: 0.04em;
+}
+
+nav a:hover { color: var(--neon-pink); text-shadow: var(--glow); }
+
+article { color: var(--fg); }
+
+article h1, article h2, article h3 {
+	color: var(--neon-purp);
+	text-shadow: 0 0 8px rgba(185, 103, 255, 0.5);
+	font-weight: 700;
+	line-height: 1.2;
+	margin-top: 2.2rem;
+}
+
+article a {
+	color: var(--neon-pink);
+	text-decoration: none;
+	border-bottom: 1px dotted currentColor;
+}
+
+article a:hover { text-shadow: var(--glow); }
+
+article code {
+	font-family: var(--mono);
+	background: rgba(45, 226, 230, 0.10);
+	color: var(--neon-cyan);
+	padding: 0.1em 0.35em;
+	border-radius: 3px;
+}
+
+article pre {
+	background: rgba(0, 0, 0, 0.45);
+	border: 1px solid rgba(45, 226, 230, 0.25);
+	border-radius: 6px;
+	padding: 1rem 1.25rem;
+	overflow-x: auto;
+}
+
+article pre code { background: none; color: var(--fg); }
+
+article blockquote {
+	margin: 1.5rem 0;
+	padding-left: 1rem;
+	border-left: 3px solid var(--neon-amber);
+	color: var(--muted);
+	font-style: italic;
+}
+
+article hr {
+	border: none;
+	border-top: 1px solid rgba(185, 103, 255, 0.3);
+	margin: 2.5rem 0;
+}
+
+footer {
+	margin-top: 4rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid rgba(185, 103, 255, 0.25);
+	color: var(--muted);
+	font-size: 0.85rem;
+	letter-spacing: 0.05em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.banner { animation: flicker 4s infinite steps(60); }
+	@keyframes flicker {
+		0%, 96%, 100% { opacity: 1; }
+		97% { opacity: 0.82; }
+		98% { opacity: 1; }
+		99% { opacity: 0.88; }
+	}
+}

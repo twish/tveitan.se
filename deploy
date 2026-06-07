@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Deploy tveitan.se to the VPS (ssh host "T").
+#
+# Two modes:
+#   ./deploy            sync content + theme only (fast, no rebuild — the
+#                       running server picks up changes on the next request)
+#   ./deploy --build    also rebuild the image and restart the container
+#                       (use when main.go / Dockerfile / deps changed)
+set -euo pipefail
+
+HOST=T
+REMOTE=/opt/tveitan.se
+
+ssh "$HOST" "mkdir -p $REMOTE"
+
+echo ">> syncing content + theme"
+rsync -az --delete content theme "$HOST:$REMOTE/"
+
+if [[ "${1:-}" == "--build" ]]; then
+  echo ">> syncing build context"
+  rsync -az --delete \
+    --exclude '.git' --exclude 'content' --exclude 'theme' \
+    ./ "$HOST:$REMOTE/"
+  echo ">> building + restarting container"
+  ssh "$HOST" "cd $REMOTE && docker compose up -d --build"
+else
+  echo ">> content is live (no rebuild needed)"
+fi
+
+echo ">> done"

@@ -1,0 +1,8 @@
+# built binary
+/tveitan
+/dist/
+
+# os junk
+.DS_Store
+.idea/
+*.swp

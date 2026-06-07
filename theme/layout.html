@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{.Title}} · tveitan</title>
+	<link rel="stylesheet" href="{{.CSSHref}}">
+</head>
+<body>
+	<div class="scanlines" aria-hidden="true"></div>
+	<div class="grid" aria-hidden="true"></div>
+	<main class="crt">
+		<pre class="banner">{{.Banner}}</pre>
+		{{if .Nav}}
+		<nav>
+			<a href="/">~</a>{{range .Nav}}<a href="/{{.Slug}}">{{.Title}}</a>{{end}}
+		</nav>
+		{{end}}
+		<article>{{.Body}}</article>
+		<footer>
+			<span>// tveitan.se</span>
+		</footer>
+	</main>
+</body>
+</html>
