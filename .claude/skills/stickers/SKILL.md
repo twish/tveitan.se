@@ -44,11 +44,12 @@ Fields:
 
 ## Layout notes
 
-- Stickers are pinned in the gutters and stay there. When the window is too
-  narrow to fit one, it's hidden (per size: sm < 1180px, md < 1280px,
-  lg < 1460px) rather than reflowing — so they never cross the text or scroll.
-- Because they hide on small screens, never put information that exists *only*
-  in a sticker — the body must stand alone.
+- Stickers are pinned in the gutters while there's room. When the gutter is too
+  narrow (per size: sm < 1180px, md < 1280px, lg < 1460px) a sticker drops out
+  of the gutter and flows inline as a full-width card at the end of the article,
+  sorted into reading order by `at` — never crossing the text or scrolling.
+- The body must still stand alone: a sticker enriches the page, it isn't the
+  only place a fact lives.
 - Stagger `at` values so stickers on the same side don't overlap; vary `gap`.
 - Images are auto-tinted to fit the palette — pick images that read at ~200px wide.
 - Don't deploy; the running server renders on the next request.

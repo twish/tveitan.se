@@ -292,13 +292,19 @@ article hr {
 	color: var(--muted);
 }
 
-/* Stickers stay pinned in the gutters. When the window is too narrow for the
-   gutter to hold a sticker without crossing the text or causing a horizontal
-   scroll, hide it instead of reflowing — per size, since wider ones need more
-   room. (Mobile rendering is handled separately.) */
-@media (max-width: 1180px) { .sticker.size-sm { display: none; } }
-@media (max-width: 1280px) { .sticker.size-md { display: none; } }
-@media (max-width: 1460px) { .sticker.size-lg { display: none; } }
+/* Stickers stay pinned in the gutters while there's room. When the gutter is
+   too narrow for a given size, that sticker drops out of the gutter and flows
+   inline as a full-width card at the end of the article (sorted into reading
+   order) — never crossing the text or causing a horizontal scroll. Wider sizes
+   need more room, so they collapse earlier. */
+@media (max-width: 1180px) { .sticker.size-sm { position: static; width: auto; margin: 1.5rem 0 0; transform: none; } }
+@media (max-width: 1280px) { .sticker.size-md { position: static; width: auto; margin: 1.5rem 0 0; transform: none; } }
+@media (max-width: 1460px) { .sticker.size-lg { position: static; width: auto; margin: 1.5rem 0 0; transform: none; } }
+
+/* give the inline stack a little breathing room from the body text */
+@media (max-width: 1460px) {
+	.stickers { margin-top: 2rem; }
+}
 
 footer {
 	margin-top: 4rem;

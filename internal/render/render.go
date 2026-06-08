@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/mbndr/figlet4go"
@@ -237,9 +238,15 @@ func stickersHTML(stk []content.Sticker) string {
 	if len(stk) == 0 {
 		return ""
 	}
+	// Order by vertical position so that when they collapse inline on narrow
+	// screens they stack in reading order.
+	sorted := make([]content.Sticker, len(stk))
+	copy(sorted, stk)
+	sort.SliceStable(sorted, func(i, j int) bool { return atValue(sorted[i].At) < atValue(sorted[j].At) })
+
 	var b strings.Builder
 	b.WriteString(`<div class="stickers">`)
-	for _, s := range stk {
+	for _, s := range sorted {
 		side := "right"
 		if s.Side == "left" {
 			side = "left"
@@ -264,6 +271,12 @@ func stickersHTML(stk []content.Sticker) string {
 	}
 	b.WriteString(`</div>`)
 	return b.String()
+}
+
+// atValue parses the leading number out of an "NN%" position for sorting.
+func atValue(at string) int {
+	n, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimSpace(at), "%"))
+	return n
 }
 
 func stickerInner(s content.Sticker, typ string) string {
