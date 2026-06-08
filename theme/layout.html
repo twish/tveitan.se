@@ -15,7 +15,7 @@
 		</div>
 		{{if .Nav}}
 		<nav>
-			<a href="/">~</a>{{range .Nav}}<a href="/{{.Slug}}">{{.Title}}</a>{{end}}
+			<a href="/">~</a>{{range .Nav}}<span class="sep">/</span><a href="/{{.Slug}}">{{.Title}}</a>{{end}}
 		</nav>
 		{{end}}
 		<article>{{.Body}}</article>
