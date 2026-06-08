@@ -10,14 +10,8 @@
 	<div class="scanlines" aria-hidden="true"></div>
 	<div class="grid" aria-hidden="true"></div>
 	<main class="crt">
-		<div class="hero" style="text-align:{{.Align}}">
-			<pre class="banner{{if .Wide}} wide{{end}}" style="--cols:{{.Cols}};--g1:{{.G1}};--g2:{{.G2}};--ga:{{.Angle}}">{{.Banner}}</pre>
-		</div>
-		{{if .Nav}}
-		<nav>
-			<a href="/">~</a>{{range .Nav}}<span class="sep">/</span><a href="/{{.Slug}}">{{.Title}}</a>{{end}}
-		</nav>
-		{{end}}
+		{{.Heading}}
+		{{.Nav}}
 		<article>{{.Body}}</article>
 		<footer>
 			<span>// tveitan.se</span>

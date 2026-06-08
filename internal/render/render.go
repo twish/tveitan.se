@@ -36,34 +36,28 @@ type Built struct {
 	CSSHref string
 }
 
-type navItem struct {
-	Slug  string
-	Title string
-}
-
 type pageData struct {
 	Title   string
-	Banner  string
-	Cols    int    // widest banner line; CSS scales the font so it never overflows
-	G1      string // banner gradient start color
-	G2      string // banner gradient end color
-	Angle   string // banner gradient direction
-	Align   string // text-align placement: left | center | right
-	Wide    bool   // fill ~90vw instead of natural capped size
+	Heading template.HTML // produced by the HeadingRenderer
+	Nav     template.HTML // produced by the NavRenderer
 	Body    template.HTML
 	CSSHref string
-	Nav     []navItem
 }
 
-// Renderer holds the theme location and the markdown + ascii engines.
+// Renderer orchestrates a page: markdown body + a pluggable heading and nav.
+// Swap heading/nav to reskin the engine for a different site (see HeadingRenderer,
+// NavRenderer).
 type Renderer struct {
 	themeDir string
 	md       goldmark.Markdown
 	ascii    *figlet4go.AsciiRender
+	heading  HeadingRenderer
+	nav      NavRenderer
 }
 
 // New builds a renderer that reads its theme from themeDir and loads the
-// embedded figlet fonts.
+// embedded figlet fonts. It wires this site's defaults: ascii-art headings and
+// unix-shell navigation.
 func New(themeDir string) (*Renderer, error) {
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM, extension.Typographer),
@@ -76,6 +70,8 @@ func New(themeDir string) (*Renderer, error) {
 		themeDir: themeDir,
 		md:       md,
 		ascii:    ascii,
+		heading:  asciiHeading{ascii: ascii},
+		nav:      unixNav{},
 	}, nil
 }
 
@@ -119,7 +115,7 @@ func (r *Renderer) ThemeVersion() (string, error) {
 // Build renders every doc into a full HTML page. It reads the theme fresh each
 // call; callers gate it behind a version check so it only runs when something
 // actually changed.
-func (r *Renderer) Build(docs []content.Doc) (*Built, error) {
+func (r *Renderer) Build(docs []content.Doc, sections []content.Section) (*Built, error) {
 	css, err := os.ReadFile(filepath.Join(r.themeDir, "synthwave.css"))
 	if err != nil {
 		return nil, fmt.Errorf("read css: %w", err)
@@ -132,22 +128,40 @@ func (r *Renderer) Build(docs []content.Doc) (*Built, error) {
 		return nil, fmt.Errorf("parse layout: %w", err)
 	}
 
-	nav := buildNav(docs)
-	pages := make(map[string]string, len(docs)+1)
+	pages := make(map[string]string, len(docs)+len(sections)+1)
 	for _, doc := range docs {
 		body, err := r.markdown(doc.Body)
 		if err != nil {
 			return nil, fmt.Errorf("render %s: %w", doc.Slug, err)
 		}
-		page, err := r.page(tmpl, doc, body, cssHref, nav)
+		// The start page composes the sections' latest/pinned blocks beneath it.
+		if doc.Slug == "index" {
+			body += template.HTML(homeBlocksHTML(sections, docs))
+		}
+		page, err := r.page(tmpl, doc, body, cssHref, docs, sections)
 		if err != nil {
 			return nil, fmt.Errorf("render %s: %w", doc.Slug, err)
 		}
 		pages[doc.Slug] = page
 	}
 
+	// One listing page per section at /<slug>: intro + the folder's entries.
+	for _, sec := range sections {
+		intro, err := r.markdown(sec.Body)
+		if err != nil {
+			return nil, fmt.Errorf("render section %s: %w", sec.Slug, err)
+		}
+		body := intro + template.HTML(listingHTML(entriesOf(sec, docs)))
+		doc := content.Doc{Slug: sec.Slug, Title: sec.Title, Banner: sec.Banner, Style: sec.Style}
+		page, err := r.page(tmpl, doc, body, cssHref, docs, sections)
+		if err != nil {
+			return nil, fmt.Errorf("render section %s: %w", sec.Slug, err)
+		}
+		pages[sec.Slug] = page
+	}
+
 	galleryDoc := content.Doc{Slug: "styles", Title: "styles", Style: "slant-cyan-pink"}
-	gallery, err := r.page(tmpl, galleryDoc, r.galleryBody(), cssHref, nav)
+	gallery, err := r.page(tmpl, galleryDoc, r.galleryBody(), cssHref, docs, sections)
 	if err != nil {
 		return nil, fmt.Errorf("render gallery: %w", err)
 	}
@@ -156,23 +170,16 @@ func (r *Renderer) Build(docs []content.Doc) (*Built, error) {
 	return &Built{Pages: pages, CSS: css, CSSHref: cssHref}, nil
 }
 
-// page renders one doc through the layout with its frozen style applied.
-func (r *Renderer) page(tmpl *template.Template, doc content.Doc, body template.HTML, cssHref string, nav []navItem) (string, error) {
-	st := selectStyle(doc)
-	banner := r.banner(doc, st)
+// page renders one doc through the layout, asking the heading and nav renderers
+// for their markup.
+func (r *Renderer) page(tmpl *template.Template, doc content.Doc, body template.HTML, cssHref string, docs []content.Doc, sections []content.Section) (string, error) {
 	body += template.HTML(stickersHTML(doc.Stickers))
 	data := pageData{
 		Title:   doc.Title,
-		Banner:  banner,
-		Cols:    maxLineLen(banner),
-		G1:      st.Palette.g1,
-		G2:      st.Palette.g2,
-		Angle:   st.Angle,
-		Align:   st.Align,
-		Wide:    st.Wide,
+		Heading: r.heading.Heading(doc),
+		Nav:     r.nav.Nav(doc.Slug, docs, sections),
 		Body:    body,
 		CSSHref: cssHref,
-		Nav:     nav,
 	}
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {
@@ -189,25 +196,6 @@ func (r *Renderer) markdown(src string) (template.HTML, error) {
 	return template.HTML(buf.String()), nil
 }
 
-// banner returns the ascii heading: a verbatim frontmatter banner if the author
-// hand-drew one, otherwise the title run through the style's figlet font.
-func (r *Renderer) banner(doc content.Doc, st bannerStyle) string {
-	if doc.Banner != "" {
-		return doc.Banner
-	}
-	return r.figlet(doc.Title, st.Font)
-}
-
-func (r *Renderer) figlet(text, font string) string {
-	opt := figlet4go.NewRenderOptions()
-	opt.FontName = font
-	art, err := r.ascii.RenderOpts(text, opt)
-	if err != nil {
-		return text
-	}
-	return strings.Trim(art, "\n")
-}
-
 // galleryBody builds the /styles page: every style rendered with sample text,
 // labelled by index and name, so a specific look can be picked by number.
 func (r *Renderer) galleryBody() template.HTML {
@@ -216,7 +204,7 @@ func (r *Renderer) galleryBody() template.HTML {
 	b.WriteString(`<p>Every heading style, frozen. Set <code>style: N</code> (or the name) in a page's frontmatter to pin one; leave it out and it's derived from the slug.</p>`)
 	b.WriteString(`<div class="gallery">`)
 	for i, st := range styles {
-		art := r.figlet(sample, st.Font)
+		art := figlet(r.ascii, sample, st.Font)
 		placement := st.Align
 		if st.Wide {
 			placement = "wide"
@@ -297,16 +285,91 @@ func stickerInner(s content.Sticker, typ string) string {
 	}
 }
 
-func buildNav(docs []content.Doc) []navItem {
-	var nav []navItem
+// entriesOf returns a section's pages (the docs directly under its directory),
+// sorted by the section's rule: "date" newest-first, otherwise by order.
+func entriesOf(sec content.Section, docs []content.Doc) []content.Doc {
+	var out []content.Doc
 	for _, d := range docs {
-		if d.Slug == "index" || d.Slug == "404" {
+		if d.Section() == sec.Slug {
+			out = append(out, d)
+		}
+	}
+	if sec.Sort == "date" {
+		sort.SliceStable(out, func(i, j int) bool { return out[i].Date > out[j].Date })
+		return out
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Order != out[j].Order {
+			return out[i].Order < out[j].Order
+		}
+		return out[i].Title < out[j].Title
+	})
+	return out
+}
+
+func listingHTML(entries []content.Doc) string {
+	esc := template.HTMLEscapeString
+	if len(entries) == 0 {
+		return `<p class="listing-empty">Nothing here yet.</p>`
+	}
+	var b strings.Builder
+	b.WriteString(`<ul class="listing">`)
+	for _, d := range entries {
+		date := ""
+		if d.Date != "" {
+			date = `<time>` + esc(d.Date) + `</time>`
+		}
+		fmt.Fprintf(&b, `<li><a href="/%s">%s</a>%s</li>`, esc(d.Slug), esc(d.Title), date)
+	}
+	b.WriteString(`</ul>`)
+	return b.String()
+}
+
+// homeBlocksHTML composes the start-page section blocks: each section surfaces
+// its latest N entries or a pinned set, per its `home` metadata.
+func homeBlocksHTML(sections []content.Section, docs []content.Doc) string {
+	secs := append([]content.Section(nil), sections...)
+	sort.SliceStable(secs, func(i, j int) bool { return secs[i].Order < secs[j].Order })
+
+	var b strings.Builder
+	for _, sec := range secs {
+		var entries []content.Doc
+		switch sec.HomeMode {
+		case "latest":
+			entries = entriesOf(sec, docs)
+			n := sec.HomeCount
+			if n <= 0 {
+				n = 3
+			}
+			if len(entries) > n {
+				entries = entries[:n]
+			}
+		case "pinned":
+			entries = pickPinned(sec, docs)
+		default:
 			continue
 		}
-		nav = append(nav, navItem{Slug: d.Slug, Title: d.Title})
+		if len(entries) == 0 {
+			continue
+		}
+		fmt.Fprintf(&b, `<section class="home-block"><h2><a href="/%s">%s</a></h2>%s</section>`,
+			template.HTMLEscapeString(sec.Slug), template.HTMLEscapeString(sec.Title), listingHTML(entries))
 	}
-	sort.Slice(nav, func(i, j int) bool { return nav[i].Title < nav[j].Title })
-	return nav
+	return b.String()
+}
+
+func pickPinned(sec content.Section, docs []content.Doc) []content.Doc {
+	bySlug := make(map[string]content.Doc, len(docs))
+	for _, d := range docs {
+		bySlug[d.Slug] = d
+	}
+	var out []content.Doc
+	for _, slug := range sec.HomePinned {
+		if d, ok := bySlug[slug]; ok {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 // maxLineLen returns the widest line in runes, so the template can tell CSS how

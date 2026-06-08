@@ -46,6 +46,32 @@ type Sticker struct {
 	Gap    string // distance from the text column, e.g. "4rem"; varies the spacing
 }
 
+// Section is an indexed top-level directory (defined by its _index.md). It gets
+// a listing page at /<slug> and can appear in the nav and on the start page.
+type Section struct {
+	Slug   string // directory name, e.g. "posts"
+	Title  string
+	Banner string
+	Style  string
+	Nav    bool   // show in the top nav
+	Order  int    // nav + start-page ordering
+	Sort   string // how to sort entries: "date" (newest first) or "order"
+	Body   string // intro markdown shown above the listing
+
+	HomeMode   string   // how it surfaces on the start page: latest | pinned | none
+	HomeCount  int      // for latest
+	HomePinned []string // entry slugs, for pinned
+}
+
+// Section returns the top-level directory a doc belongs to, or "" for a
+// top-level page.
+func (d Doc) Section() string {
+	if i := strings.IndexByte(d.Slug, '/'); i >= 0 {
+		return d.Slug[:i]
+	}
+	return ""
+}
+
 // Source is everything the renderer needs from a content backend.
 //
 // Version must change whenever any doc changes, and must be cheap to compute —
@@ -53,6 +79,7 @@ type Sticker struct {
 // return an etag or a content digest.
 type Source interface {
 	List(ctx context.Context) ([]Doc, error)
+	Sections(ctx context.Context) ([]Section, error)
 	Version(ctx context.Context) (string, error)
 }
 
@@ -101,6 +128,9 @@ func (s *FSSource) List(ctx context.Context) ([]Doc, error) {
 		if d.IsDir() || !strings.HasSuffix(path, ".md") {
 			return nil
 		}
+		if d.Name() == "_index.md" {
+			return nil // section definition, not a page
+		}
 		doc, err := s.read(path)
 		if err != nil {
 			return fmt.Errorf("read %s: %w", path, err)
@@ -146,6 +176,64 @@ func (s *FSSource) Version(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil))[:16], nil
+}
+
+// sectionFM is the frontmatter of a directory's _index.md.
+type sectionFM struct {
+	Title  string `yaml:"title"`
+	Banner string `yaml:"banner"`
+	Style  any    `yaml:"style"`
+	Nav    bool   `yaml:"nav"`
+	Order  int    `yaml:"order"`
+	Sort   string `yaml:"sort"`
+	Home   struct {
+		Mode   string   `yaml:"mode"`
+		Count  int      `yaml:"count"`
+		Pinned []string `yaml:"pinned"`
+	} `yaml:"home"`
+}
+
+// Sections reads every top-level directory's _index.md.
+func (s *FSSource) Sections(ctx context.Context) ([]Section, error) {
+	entries, err := os.ReadDir(s.dir)
+	if err != nil {
+		return nil, err
+	}
+	var sections []Section
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		path := filepath.Join(s.dir, e.Name(), "_index.md")
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			continue // a directory without _index.md is not a section
+		}
+		var fm sectionFM
+		body := splitInto(raw, &fm)
+		title := fm.Title
+		if title == "" {
+			title = e.Name()
+		}
+		sort := fm.Sort
+		if sort == "" {
+			sort = "order"
+		}
+		sections = append(sections, Section{
+			Slug:       e.Name(),
+			Title:      title,
+			Banner:     fm.Banner,
+			Style:      styleString(fm.Style),
+			Nav:        fm.Nav,
+			Order:      fm.Order,
+			Sort:       sort,
+			Body:       string(body),
+			HomeMode:   fm.Home.Mode,
+			HomeCount:  fm.Home.Count,
+			HomePinned: fm.Home.Pinned,
+		})
+	}
+	return sections, nil
 }
 
 func (s *FSSource) read(path string) (Doc, error) {
@@ -223,25 +311,31 @@ func styleString(v any) string {
 // splitFrontmatter peels a leading `---\n…\n---\n` YAML block off the document.
 // A file without one is all body — frontmatter is optional.
 func splitFrontmatter(raw []byte) (frontmatter, []byte) {
+	var fm frontmatter
+	body := splitInto(raw, &fm)
+	return fm, body
+}
+
+// splitInto peels the leading YAML frontmatter and unmarshals it into target,
+// returning the remaining body. Missing or malformed frontmatter leaves target
+// zero-valued and returns the whole input as body, so a bad block never blanks
+// the page.
+func splitInto(raw []byte, target any) []byte {
 	const fence = "---"
 	text := string(raw)
 	if !strings.HasPrefix(text, fence+"\n") && !strings.HasPrefix(text, fence+"\r\n") {
-		return frontmatter{}, raw
+		return raw
 	}
 	rest := text[len(fence):]
 	rest = strings.TrimLeft(rest, "\r\n")
 	end := strings.Index(rest, "\n"+fence)
 	if end < 0 {
-		return frontmatter{}, raw
+		return raw
 	}
 	head := rest[:end]
-	body := rest[end+len("\n"+fence):]
-	body = strings.TrimLeft(body, "\r\n")
-
-	var fm frontmatter
-	if err := yaml.Unmarshal([]byte(head), &fm); err != nil {
-		// Malformed frontmatter shouldn't blank the page — treat it all as body.
-		return frontmatter{}, raw
+	body := strings.TrimLeft(rest[end+len("\n"+fence):], "\r\n")
+	if err := yaml.Unmarshal([]byte(head), target); err != nil {
+		return raw
 	}
-	return fm, []byte(body)
+	return []byte(body)
 }

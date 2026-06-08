@@ -161,6 +161,31 @@ nav .sep {
 	user-select: none;
 }
 
+/* unix-shell nav: pwd breadcrumb + ls of the current directory */
+.nav-unix { gap: 0.4rem 1.5rem; }
+
+.crumbs,
+.ls {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.45rem;
+}
+
+.ls { color: var(--muted); }
+
+.crumbs .here,
+.ls .here {
+	color: var(--neon-pink);
+	text-shadow: 0 0 8px rgba(255, 46, 151, 0.4);
+}
+
+.bracket,
+.pipe {
+	color: var(--muted);
+	user-select: none;
+}
+
 nav a:hover { color: var(--neon-pink); text-shadow: var(--glow); }
 
 article { color: var(--fg); position: relative; }
@@ -206,6 +231,46 @@ article blockquote {
 	color: var(--muted);
 	font-style: italic;
 }
+
+.home-block { margin-top: 3rem; }
+
+.home-block h2 a {
+	color: var(--neon-purp);
+	text-decoration: none;
+	text-shadow: 0 0 8px rgba(185, 103, 255, 0.5);
+}
+
+.home-block h2 a:hover { color: var(--neon-pink); }
+
+.listing {
+	list-style: none;
+	padding: 0;
+	margin: 0.5rem 0 0;
+}
+
+.listing li {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 1rem;
+	padding: 0.5rem 0;
+	border-bottom: 1px solid rgba(185, 103, 255, 0.14);
+}
+
+.listing a {
+	color: var(--neon-cyan);
+	text-decoration: none;
+}
+
+.listing a:hover { color: var(--neon-pink); text-shadow: var(--glow); }
+
+.listing time {
+	color: var(--muted);
+	font-size: 0.8rem;
+	white-space: nowrap;
+}
+
+.listing-empty { color: var(--muted); }
 
 article hr {
 	height: 8px;
