@@ -67,15 +67,43 @@ intro markdown shown above the listing
 
 ```
 main.go               server: render + cache (version-keyed)
-internal/content/     Source interface + FSSource (folder of *.md)
-internal/render/      goldmark + figlet ascii banner + theme
+pkg/content/          Source interface + FSSource (folder of *.md)
+pkg/render/           md→html + heading/nav/footer renderers + theme
 theme/                layout.html + synthwave.css  (the look)
 content/              the markdown                 (the words)
 .claude/skills/       voice.md + new-post + asciify (the author)
-caddy/tveitan.caddy   reverse-proxy snippet for the VPS
-docker-compose.yml    runs behind the shared Caddy on host T
+caddy/tveitan.caddy   reverse-proxy site snippet
+docker-compose.yml    runs the container behind the reverse proxy
 deploy                ./deploy  (content+theme) | ./deploy --build (image)
 ```
+
+## Reusing the engine
+
+`pkg/render` and `pkg/content` are the generic engine — they know nothing about
+ascii, figlet, or synthwave. This site's concrete look lives in `internal/site`
+(ascii heading, unix nav, footer, style system, the `/styles` gallery) and is
+wired into the engine from `main.go`. To reskin, implement an interface and pass
+the matching option to `render.New`; the engine falls back to plain defaults for
+anything you don't provide:
+
+```go
+type MyNav struct{}
+func (MyNav) Nav(cur string, docs []content.Doc, secs []content.Section) template.HTML {
+    return template.HTML(`<nav>…my markup…</nav>`)
+}
+
+r, _ := render.New("theme", render.WithNav(MyNav{}))
+// also: render.WithHeading(…), render.WithFooter(…), render.WithExtraPages(…)
+```
+
+| Interface | Engine default | This site (`internal/site`) |
+|---|---|---|
+| `HeadingRenderer` | plain `<h1>` | ascii banner + synthwave styles |
+| `NavRenderer` | none | unix breadcrumb + `ls` |
+| `FooterRenderer` | none | brand + year |
+
+Background and the content-area wrapper are theme concerns (`theme/`), not Go
+seams — swap the theme to change them.
 
 ## Deploy
 

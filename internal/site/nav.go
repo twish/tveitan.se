@@ -1,4 +1,4 @@
-package render
+package site
 
 import (
 	"fmt"
@@ -6,20 +6,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/twish/tveitan.se/internal/content"
+	"github.com/twish/tveitan.se/pkg/content"
 )
 
-// NavRenderer turns the content tree plus the current location into navigation
-// markup. It's a swap point: this site renders a unix-shell breadcrumb + ls
-// (unixNav); another site could implement it as a flat top menu.
-type NavRenderer interface {
-	Nav(current string, docs []content.Doc, sections []content.Section) template.HTML
-}
-
-// unixNav renders navigation the way a shell shows location: a pwd breadcrumb
+// UnixNav renders navigation the way a shell shows location: a pwd breadcrumb
 // (~ / posts / hello) and the ls of the current directory as [ a | b | c ],
-// with directories suffixed "/" and the current entry highlighted.
-type unixNav struct{}
+// with directories suffixed "/" and the current entry highlighted. It satisfies
+// render.NavRenderer.
+type UnixNav struct{}
 
 type crumb struct {
 	Label string
@@ -34,7 +28,7 @@ type navOpt struct {
 	Here  bool
 }
 
-func (unixNav) Nav(current string, docs []content.Doc, sections []content.Section) template.HTML {
+func (UnixNav) Nav(current string, docs []content.Doc, sections []content.Section) template.HTML {
 	crumbs, opts, isDir := unixLayout(current, docs, sections)
 
 	var b strings.Builder
@@ -122,7 +116,7 @@ func unixLayout(current string, docs []content.Doc, sections []content.Section) 
 		}
 		sort.SliceStable(opts, func(i, j int) bool { return opts[i].Label < opts[j].Label })
 	} else if sec, ok := secBySlug[dir]; ok {
-		for _, d := range entriesOf(sec, docs) {
+		for _, d := range content.Entries(sec, docs) {
 			label := d.Slug
 			if i := strings.LastIndexByte(d.Slug, '/'); i >= 0 {
 				label = d.Slug[i+1:]

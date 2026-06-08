@@ -72,6 +72,28 @@ func (d Doc) Section() string {
 	return ""
 }
 
+// Entries returns a section's pages (the docs directly under its directory),
+// sorted by the section's rule: "date" newest-first, otherwise by order.
+func Entries(sec Section, docs []Doc) []Doc {
+	var out []Doc
+	for _, d := range docs {
+		if d.Section() == sec.Slug {
+			out = append(out, d)
+		}
+	}
+	if sec.Sort == "date" {
+		sort.SliceStable(out, func(i, j int) bool { return out[i].Date > out[j].Date })
+		return out
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Order != out[j].Order {
+			return out[i].Order < out[j].Order
+		}
+		return out[i].Title < out[j].Title
+	})
+	return out
+}
+
 // Source is everything the renderer needs from a content backend.
 //
 // Version must change whenever any doc changes, and must be cheap to compute —

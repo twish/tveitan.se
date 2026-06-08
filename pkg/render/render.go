@@ -1,15 +1,13 @@
-// Package render turns docs + a theme into ready-to-serve HTML pages.
-//
-// The theme (layout.html + synthwave.css) lives on disk so it can be tweaked
-// without recompiling. The CSS is served under a content-hashed URL so browsers
-// cache it forever yet never go stale: change the file, the hash changes, the
-// URL changes, the browser refetches.
+// Package render is a small site engine: it turns markdown docs + a theme into
+// cached, ready-to-serve HTML pages. It is content- and look-agnostic — the
+// heading, nav, and footer are pluggable (see HeadingRenderer, NavRenderer,
+// FooterRenderer), and extra synthetic pages can be injected with WithExtraPages.
+// A concrete site wires its own renderers via New's options.
 package render
 
 import (
 	"bytes"
 	"crypto/sha256"
-	"embed"
 	"encoding/hex"
 	"fmt"
 	"html/template"
@@ -19,14 +17,34 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mbndr/figlet4go"
-	"github.com/twish/tveitan.se/internal/content"
+	"github.com/twish/tveitan.se/pkg/content"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 )
 
-//go:embed fonts/*.flf
-var fontFS embed.FS
+// HeadingRenderer produces the markup for a page's heading. Swap point: return
+// ascii art, a plain <h1>, a hero image — whatever the site wants.
+type HeadingRenderer interface {
+	Heading(doc content.Doc) template.HTML
+}
+
+// NavRenderer turns the content tree + current location into navigation markup.
+type NavRenderer interface {
+	Nav(current string, docs []content.Doc, sections []content.Section) template.HTML
+}
+
+// FooterRenderer produces the page footer from the content tree.
+type FooterRenderer interface {
+	Footer(docs []content.Doc, sections []content.Section) template.HTML
+}
+
+// ExtraPage is a synthetic page the site injects (e.g. a generated index or
+// gallery). It's rendered through the layout like any doc, so it gets the same
+// heading/nav/footer/theme.
+type ExtraPage struct {
+	Doc  content.Doc
+	Body template.HTML
+}
 
 // Built is one fully rendered snapshot of the site for a given content+theme
 // version. Pages are keyed by slug. Everything here is immutable once returned.
@@ -38,64 +56,54 @@ type Built struct {
 
 type pageData struct {
 	Title   string
-	Heading template.HTML // produced by the HeadingRenderer
-	Nav     template.HTML // produced by the NavRenderer
+	Heading template.HTML
+	Nav     template.HTML
 	Body    template.HTML
+	Footer  template.HTML
 	CSSHref string
 }
 
-// Renderer orchestrates a page: markdown body + a pluggable heading and nav.
-// Swap heading/nav to reskin the engine for a different site (see HeadingRenderer,
-// NavRenderer).
+// Renderer orchestrates a page: markdown body + pluggable heading/nav/footer.
 type Renderer struct {
 	themeDir string
 	md       goldmark.Markdown
-	ascii    *figlet4go.AsciiRender
 	heading  HeadingRenderer
 	nav      NavRenderer
+	footer   FooterRenderer
+	extra    []ExtraPage
 }
 
-// New builds a renderer that reads its theme from themeDir and loads the
-// embedded figlet fonts. It wires this site's defaults: ascii-art headings and
-// unix-shell navigation.
-func New(themeDir string) (*Renderer, error) {
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, extension.Typographer),
-	)
-	ascii := figlet4go.NewAsciiRender()
-	if err := loadFonts(ascii); err != nil {
-		return nil, err
-	}
-	return &Renderer{
+// Option overrides a Renderer default.
+type Option func(*Renderer)
+
+// WithHeading swaps the heading renderer.
+func WithHeading(h HeadingRenderer) Option { return func(r *Renderer) { r.heading = h } }
+
+// WithNav swaps the nav renderer.
+func WithNav(n NavRenderer) Option { return func(r *Renderer) { r.nav = n } }
+
+// WithFooter swaps the footer renderer.
+func WithFooter(f FooterRenderer) Option { return func(r *Renderer) { r.footer = f } }
+
+// WithExtraPages injects synthetic pages, rendered through the layout.
+func WithExtraPages(pages ...ExtraPage) Option {
+	return func(r *Renderer) { r.extra = append(r.extra, pages...) }
+}
+
+// New builds a renderer reading its theme from themeDir. Defaults are minimal
+// (plain heading, no nav/footer); pass With… options to plug in real renderers.
+func New(themeDir string, opts ...Option) (*Renderer, error) {
+	r := &Renderer{
 		themeDir: themeDir,
-		md:       md,
-		ascii:    ascii,
-		heading:  asciiHeading{ascii: ascii},
-		nav:      unixNav{},
-	}, nil
-}
-
-// loadFonts registers every embedded *.flf under its lowercased file stem, so
-// styles can ask for "slant", "doom", etc.
-func loadFonts(ar *figlet4go.AsciiRender) error {
-	entries, err := fontFS.ReadDir("fonts")
-	if err != nil {
-		return err
+		md:       goldmark.New(goldmark.WithExtensions(extension.GFM, extension.Typographer)),
+		heading:  plainHeading{},
+		nav:      plainNav{},
+		footer:   plainFooter{},
 	}
-	for _, e := range entries {
-		data, err := fontFS.ReadFile("fonts/" + e.Name())
-		if err != nil {
-			return err
-		}
-		// Some .flf ship with CRLF; a stray \r corrupts figlet4go's endmark
-		// parsing and the glyphs render stacked vertically. Normalize to LF.
-		data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
-		name := strings.ToLower(strings.TrimSuffix(e.Name(), ".flf"))
-		if err := ar.LoadBindataFont(data, name); err != nil {
-			return fmt.Errorf("load font %s: %w", name, err)
-		}
+	for _, o := range opts {
+		o(r)
 	}
-	return nil
+	return r, nil
 }
 
 // ThemeVersion hashes the theme files so a theme edit busts the render cache
@@ -112,23 +120,21 @@ func (r *Renderer) ThemeVersion() (string, error) {
 	return hex.EncodeToString(h.Sum(nil))[:16], nil
 }
 
-// Build renders every doc into a full HTML page. It reads the theme fresh each
-// call; callers gate it behind a version check so it only runs when something
-// actually changed.
+// Build renders every doc, section listing, and injected extra page into a full
+// HTML page. Callers gate it behind a version check so it only runs on change.
 func (r *Renderer) Build(docs []content.Doc, sections []content.Section) (*Built, error) {
 	css, err := os.ReadFile(filepath.Join(r.themeDir, "synthwave.css"))
 	if err != nil {
 		return nil, fmt.Errorf("read css: %w", err)
 	}
-	cssHash := hex.EncodeToString(sha256Sum(css))[:12]
-	cssHref := "/assets/synthwave." + cssHash + ".css"
+	cssHref := "/assets/synthwave." + hex.EncodeToString(sha256Sum(css))[:12] + ".css"
 
 	tmpl, err := template.ParseFiles(filepath.Join(r.themeDir, "layout.html"))
 	if err != nil {
 		return nil, fmt.Errorf("parse layout: %w", err)
 	}
 
-	pages := make(map[string]string, len(docs)+len(sections)+1)
+	pages := make(map[string]string, len(docs)+len(sections)+len(r.extra))
 	for _, doc := range docs {
 		body, err := r.markdown(doc.Body)
 		if err != nil {
@@ -151,7 +157,7 @@ func (r *Renderer) Build(docs []content.Doc, sections []content.Section) (*Built
 		if err != nil {
 			return nil, fmt.Errorf("render section %s: %w", sec.Slug, err)
 		}
-		body := intro + template.HTML(listingHTML(entriesOf(sec, docs)))
+		body := intro + template.HTML(listingHTML(content.Entries(sec, docs)))
 		doc := content.Doc{Slug: sec.Slug, Title: sec.Title, Banner: sec.Banner, Style: sec.Style}
 		page, err := r.page(tmpl, doc, body, cssHref, docs, sections)
 		if err != nil {
@@ -160,18 +166,19 @@ func (r *Renderer) Build(docs []content.Doc, sections []content.Section) (*Built
 		pages[sec.Slug] = page
 	}
 
-	galleryDoc := content.Doc{Slug: "styles", Title: "styles", Style: "slant-cyan-pink"}
-	gallery, err := r.page(tmpl, galleryDoc, r.galleryBody(), cssHref, docs, sections)
-	if err != nil {
-		return nil, fmt.Errorf("render gallery: %w", err)
+	for _, ep := range r.extra {
+		page, err := r.page(tmpl, ep.Doc, ep.Body, cssHref, docs, sections)
+		if err != nil {
+			return nil, fmt.Errorf("render extra %s: %w", ep.Doc.Slug, err)
+		}
+		pages[ep.Doc.Slug] = page
 	}
-	pages["styles"] = gallery
 
 	return &Built{Pages: pages, CSS: css, CSSHref: cssHref}, nil
 }
 
-// page renders one doc through the layout, asking the heading and nav renderers
-// for their markup.
+// page renders one doc through the layout, asking the heading/nav/footer
+// renderers for their markup.
 func (r *Renderer) page(tmpl *template.Template, doc content.Doc, body template.HTML, cssHref string, docs []content.Doc, sections []content.Section) (string, error) {
 	body += template.HTML(stickersHTML(doc.Stickers))
 	data := pageData{
@@ -179,6 +186,7 @@ func (r *Renderer) page(tmpl *template.Template, doc content.Doc, body template.
 		Heading: r.heading.Heading(doc),
 		Nav:     r.nav.Nav(doc.Slug, docs, sections),
 		Body:    body,
+		Footer:  r.footer.Footer(docs, sections),
 		CSSHref: cssHref,
 	}
 	var buf bytes.Buffer
@@ -196,32 +204,9 @@ func (r *Renderer) markdown(src string) (template.HTML, error) {
 	return template.HTML(buf.String()), nil
 }
 
-// galleryBody builds the /styles page: every style rendered with sample text,
-// labelled by index and name, so a specific look can be picked by number.
-func (r *Renderer) galleryBody() template.HTML {
-	const sample = "tveitan"
-	var b strings.Builder
-	b.WriteString(`<p>Every heading style, frozen. Set <code>style: N</code> (or the name) in a page's frontmatter to pin one; leave it out and it's derived from the slug.</p>`)
-	b.WriteString(`<div class="gallery">`)
-	for i, st := range styles {
-		art := figlet(r.ascii, sample, st.Font)
-		placement := st.Align
-		if st.Wide {
-			placement = "wide"
-		}
-		fmt.Fprintf(&b,
-			`<div class="style-card"><div class="style-meta"><span class="idx">%02d</span> %s · %s</div>`+
-				`<pre class="banner" style="--cols:%d;--g1:%s;--g2:%s;--ga:%s">%s</pre></div>`,
-			i, template.HTMLEscapeString(st.Name), placement,
-			maxLineLen(art), st.Palette.g1, st.Palette.g2, st.Angle, template.HTMLEscapeString(art))
-	}
-	b.WriteString(`</div>`)
-	return template.HTML(b.String())
-}
-
 // stickersHTML renders the margin elements. They live inside <article> and are
-// absolutely positioned into the gutters on wide screens, collapsing to a
-// stacked list on narrow ones (see CSS).
+// absolutely positioned into the gutters on wide screens, collapsing inline on
+// narrow ones (see CSS).
 func stickersHTML(stk []content.Sticker) string {
 	if len(stk) == 0 {
 		return ""
@@ -285,28 +270,6 @@ func stickerInner(s content.Sticker, typ string) string {
 	}
 }
 
-// entriesOf returns a section's pages (the docs directly under its directory),
-// sorted by the section's rule: "date" newest-first, otherwise by order.
-func entriesOf(sec content.Section, docs []content.Doc) []content.Doc {
-	var out []content.Doc
-	for _, d := range docs {
-		if d.Section() == sec.Slug {
-			out = append(out, d)
-		}
-	}
-	if sec.Sort == "date" {
-		sort.SliceStable(out, func(i, j int) bool { return out[i].Date > out[j].Date })
-		return out
-	}
-	sort.SliceStable(out, func(i, j int) bool {
-		if out[i].Order != out[j].Order {
-			return out[i].Order < out[j].Order
-		}
-		return out[i].Title < out[j].Title
-	})
-	return out
-}
-
 func listingHTML(entries []content.Doc) string {
 	esc := template.HTMLEscapeString
 	if len(entries) == 0 {
@@ -336,7 +299,7 @@ func homeBlocksHTML(sections []content.Section, docs []content.Doc) string {
 		var entries []content.Doc
 		switch sec.HomeMode {
 		case "latest":
-			entries = entriesOf(sec, docs)
+			entries = content.Entries(sec, docs)
 			n := sec.HomeCount
 			if n <= 0 {
 				n = 3
@@ -370,18 +333,6 @@ func pickPinned(sec content.Section, docs []content.Doc) []content.Doc {
 		}
 	}
 	return out
-}
-
-// maxLineLen returns the widest line in runes, so the template can tell CSS how
-// many columns the banner needs and the font can be scaled to fit.
-func maxLineLen(s string) int {
-	max := 1
-	for line := range strings.SplitSeq(s, "\n") {
-		if n := len([]rune(line)); n > max {
-			max = n
-		}
-	}
-	return max
 }
 
 func sha256Sum(b []byte) []byte {

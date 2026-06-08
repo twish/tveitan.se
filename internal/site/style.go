@@ -1,10 +1,10 @@
-package render
+package site
 
 import (
 	"crypto/sha256"
 	"strconv"
 
-	"github.com/twish/tveitan.se/internal/content"
+	"github.com/twish/tveitan.se/pkg/content"
 )
 
 // palette is a two-stop gradient for the banner text. All stops stay within the

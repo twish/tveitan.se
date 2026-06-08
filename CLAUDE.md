@@ -18,11 +18,15 @@ both tweakable knobs.
 - `main.go` — the server: renders + caches, keyed by a content+theme version.
   Editing a file changes the version and busts the cache on the next request,
   so content goes live with no rebuild and no restart.
-- `internal/content/` — `Source` interface + `FSSource` (folder of `*.md`). The
-  pluggable seam: a future `LifthrasirSource` can fetch documents from the
-  lifthrasir API by implementing the same interface.
-- `internal/render/` — goldmark (md→html), figlet4go (title→ascii banner),
-  theme injection, fingerprinted CSS URL for cache-busting.
+- `pkg/content/` — generic engine: `Source` interface + `FSSource` (folder of
+  `*.md`), `Doc`/`Section`/`Sticker`, `Entries`. The pluggable backend seam (a
+  future `LifthrasirSource` implements `Source`).
+- `pkg/render/` — generic engine: goldmark (md→html), cache/version + theme
+  injection, fingerprinted CSS, and the `HeadingRenderer`/`NavRenderer`/
+  `FooterRenderer` interfaces + `WithExtraPages`. Knows nothing about ascii.
+- `internal/site/` — this site's concrete look: `AsciiHeading` (figlet + the
+  synthwave style system + fonts), `UnixNav`, `Footer`, the `/styles` gallery.
+  Wired into the engine in `main.go` via `render.With…` options.
 - `theme/` — `layout.html` + `synthwave.css`, edited live (no rebuild). The look knob.
 - `content/` — all pages as markdown + frontmatter. `index.md` is the homepage.
 - `.claude/skills/` — `voice.md` (the words knob) + `new-post` / `asciify`
