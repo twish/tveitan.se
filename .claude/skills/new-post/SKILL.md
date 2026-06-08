@@ -18,7 +18,7 @@ Create a new post for tveitan.se as a markdown file under `content/`.
    `content/posts/<slug>.md`. Check it doesn't already exist.
 4. **Write the frontmatter** per the contract in voice.md. Set `date` to today,
    `order` to one more than the highest existing post `order`. Pick a random
-   `style` in 0–49 and write it in, so the heading look is frozen at creation
+   `style` in 0–59 and write it in, so the heading look is frozen at creation
    (the user can change the number later — `/styles` shows them all). Omit
    `banner` unless the title deserves hand-drawn ascii — if so, invoke the
    `asciify` skill to generate it.

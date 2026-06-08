@@ -16,11 +16,12 @@ type palette struct {
 }
 
 var palettes = []palette{
-	{"cyan-pink", "#2de2e6", "#ff2e97"},
-	{"sunset", "#ff2e97", "#ff8a3d"},
-	{"teal-purple", "#2de2e6", "#b967ff"},
-	{"purple-pink", "#b967ff", "#ff2e97"},
-	{"amber-pink", "#ffd319", "#ff2e97"},
+	{"cyan-pink", "#2de2e6", "#ff2e97"},    // synthwave classic
+	{"teal-purple", "#2de2e6", "#b967ff"},  // synthwave / ARC cool
+	{"sunset", "#ff2e97", "#ff8a3d"},       // synthwave pink->orange
+	{"hacken", "#ffe14d", "#ffb300"},       // black-yellow (Häcken / Västra Götaland)
+	{"radar", "#3a86ff", "#2de2e6"},        // ARC radar blue->cyan
+	{"golden-rust", "#ffd319", "#d9531e"},  // ARC golden-hour amber->rust
 }
 
 // figlet fonts embedded under fonts/. Names are lowercased file stems, spanning

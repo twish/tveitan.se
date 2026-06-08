@@ -26,8 +26,8 @@ banner: |        # optional verbatim ascii; omit to figlet the title
 ---
 ```
 
-`style: <0-49>` freezes the heading look (figlet font + synthwave palette +
-placement); omit it and a stable style is derived from the slug. Browse all 50
+`style: <0-59>` freezes the heading look (figlet font + synthwave palette +
+placement); omit it and a stable style is derived from the slug. Browse all 60
 at `/styles`.
 
 Or let an agent write it: the `new-post` skill drafts in the voice defined in
