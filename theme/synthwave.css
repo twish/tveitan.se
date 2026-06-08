@@ -39,8 +39,8 @@ body {
 .hazard {
 	background-image: repeating-linear-gradient(
 		45deg,
-		var(--hazard-yellow) 0 14px,
-		var(--hazard-dark) 14px 28px
+		var(--hazard-yellow) 0 3px,
+		transparent 3px 16px
 	);
 }
 
@@ -71,7 +71,7 @@ body {
 /* perspective neon grid fading toward the horizon */
 .grid {
 	position: fixed;
-	inset: 40% 0 0 0;
+	inset: 34% 0 0 0;
 	pointer-events: none;
 	z-index: 0;
 	background-image:
@@ -80,8 +80,8 @@ body {
 	background-size: 40px 40px;
 	transform: perspective(40vh) rotateX(60deg);
 	transform-origin: top center;
-	opacity: 0.10;
-	mask-image: linear-gradient(to bottom, #000 0%, transparent 80%);
+	opacity: 0.22;
+	mask-image: linear-gradient(to bottom, #000 0%, transparent 98%);
 }
 
 .crt {
@@ -222,15 +222,14 @@ article blockquote {
 }
 
 article hr {
-	height: 6px;
+	height: 8px;
 	border: none;
-	border-radius: 2px;
 	margin: 2.5rem 0;
 	opacity: 0.85;
 	background-image: repeating-linear-gradient(
 		45deg,
-		var(--hazard-yellow) 0 10px,
-		var(--hazard-dark) 10px 20px
+		var(--hazard-yellow) 0 3px,
+		transparent 3px 16px
 	);
 }
 
@@ -255,21 +254,6 @@ article hr {
 
 .sticker.side-right { left: 100%; margin-left: 2rem; }
 .sticker.side-left  { right: 100%; margin-right: 2rem; }
-
-/* hazard tape holding the sticker on */
-.sticker::before {
-	content: "";
-	position: absolute;
-	top: -6px;
-	left: 12px;
-	right: 12px;
-	height: 6px;
-	background-image: repeating-linear-gradient(
-		45deg,
-		var(--hazard-yellow) 0 8px,
-		var(--hazard-dark) 8px 16px
-	);
-}
 
 .sticker p { margin: 0; }
 
