@@ -6,3 +6,7 @@
 .DS_Store
 .idea/
 *.swp
+
+# local-only (infra specifics, machine settings) — never commit
+.claude/infra.local.md
+.claude/settings.local.json

@@ -88,7 +88,11 @@ func (s *site) current(ctx context.Context) (string, *render.Built, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	built, err := s.renderer.Build(docs)
+	sections, err := s.source.Sections(ctx)
+	if err != nil {
+		return "", nil, err
+	}
+	built, err := s.renderer.Build(docs, sections)
 	if err != nil {
 		return "", nil, err
 	}

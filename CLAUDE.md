@@ -30,10 +30,15 @@ both tweakable knobs.
 
 ## Hosting
 
-VPS, ssh host `T` (`46.246.48.99`). Runs behind a shared Caddy-in-Docker proxy
-on the external `web` network — same pattern as `tidder`. `caddy/tveitan.caddy`
-is the proxy snippet; `docker-compose.yml` runs the container; `./deploy` syncs.
-Content + theme are bind-mounted so VPS-side edits are live.
+Deployed as a Docker container behind a reverse proxy with automatic TLS.
+`docker-compose.yml` runs the container, `caddy/tveitan.caddy` is the proxy
+snippet, and `./deploy` (content+theme) / `./deploy --build` (code) publish it.
+Content + theme are bind-mounted so server-side edits are live.
+
+Operational specifics (host, paths, proxy config, DNS, deploy targets) are kept
+out of the public repo in `.claude/infra.local.md` (gitignored), imported below.
+
+@.claude/infra.local.md
 
 ## Git conventions
 

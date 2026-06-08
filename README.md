@@ -39,6 +39,30 @@ Or let an agent write it: the `new-post` skill drafts in the voice defined in
 `.claude/skills/voice.md`, `asciify` makes ascii banners, and `stickers` adds
 margin elements. Tweak `voice.md` for tone, `theme/synthwave.css` for look.
 
+## Sections
+
+A top-level directory becomes a **section** by adding `content/<dir>/_index.md`.
+Its frontmatter controls navigation and how it surfaces:
+
+```yaml
+---
+title: posts
+nav: true          # show in the top nav (~ / posts / projects)
+order: 1
+sort: date         # list entries newest-first (or "order")
+style: doom-sunset # optional banner style for the listing page
+home:
+  mode: latest     # latest | pinned | none — how it shows on the start page
+  count: 3
+  # pinned: [projects/kbmkr]   # when mode: pinned
+---
+intro markdown shown above the listing
+```
+
+- `/posts` is a generated listing of that folder's entries; individual entries
+  stay out of the nav, so it stays short as posts grow.
+- The start page auto-composes a block per section (latest N or a pinned set).
+
 ## Layout
 
 ```
@@ -55,12 +79,13 @@ deploy                ./deploy  (content+theme) | ./deploy --build (image)
 
 ## Deploy
 
-Hosted on a VPS (ssh host `T`) behind a shared Caddy proxy.
+Runs as a container behind a reverse proxy with automatic TLS.
 
 ```sh
 ./deploy           # sync content + theme (live, no rebuild)
 ./deploy --build   # rebuild image + restart (code/dep changes)
 ```
 
-First-time setup: install `caddy/tveitan.caddy` into `/opt/caddy/config/` on the
-VPS, point DNS for `tveitan.se` at the host, reload Caddy (auto-TLS).
+First-time setup: install the `caddy/tveitan.caddy` snippet into the proxy's
+config, point DNS at the host, and reload the proxy (it provisions TLS). The
+host/path specifics live in a local, untracked notes file.
