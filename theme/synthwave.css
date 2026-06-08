@@ -51,7 +51,7 @@ body {
 /* perspective neon grid fading toward the horizon */
 .grid {
 	position: fixed;
-	inset: 34% 0 0 0;
+	inset: 37% 0 0 0;
 	pointer-events: none;
 	z-index: 0;
 	background-image:
@@ -60,8 +60,8 @@ body {
 	background-size: 40px 40px;
 	transform: perspective(40vh) rotateX(60deg);
 	transform-origin: top center;
-	opacity: 0.22;
-	mask-image: linear-gradient(to bottom, #000 0%, transparent 98%);
+	opacity: 0.16;
+	mask-image: linear-gradient(to bottom, #000 0%, transparent 90%);
 }
 
 .crt {
