@@ -343,6 +343,21 @@ article hr {
 	color: var(--muted);
 }
 
+.sticker-a { text-decoration: none; color: inherit; display: block; }
+
+/* a linked image is a logo/icon, not a photo — keep it crisp (its own colors)
+   with a neon glow instead of the photo duotone, and react on hover. */
+.sticker.linked.sticker-image img {
+	filter: drop-shadow(0 0 8px rgba(45, 226, 230, 0.45));
+	transition: filter 0.15s ease;
+}
+
+.sticker.linked.sticker-image:hover img {
+	filter: drop-shadow(0 0 14px rgba(255, 46, 151, 0.6));
+}
+
+.sticker.linked.sticker-image:hover figcaption { color: var(--neon-pink); }
+
 /* Stickers stay pinned in the gutters while there's room. When the gutter is
    too narrow for a given size, that sticker drops out of the gutter and flows
    inline as a full-width card at the end of the article (sorted into reading

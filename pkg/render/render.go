@@ -236,8 +236,12 @@ func stickersHTML(stk []content.Sticker) string {
 		if gap == "" {
 			gap = "3.5rem"
 		}
-		fmt.Fprintf(&b, `<aside class="sticker sticker-%s side-%s size-%s" style="--at:%s;--rot:%ddeg;--gap:%s">`,
-			template.HTMLEscapeString(typ), side, size,
+		linked := ""
+		if s.Href != "" {
+			linked = " linked"
+		}
+		fmt.Fprintf(&b, `<aside class="sticker sticker-%s side-%s size-%s%s" style="--at:%s;--rot:%ddeg;--gap:%s">`,
+			template.HTMLEscapeString(typ), side, size, linked,
 			template.HTMLEscapeString(s.At), s.Rotate, template.HTMLEscapeString(gap))
 		b.WriteString(stickerInner(s, typ))
 		b.WriteString(`</aside>`)
@@ -254,20 +258,25 @@ func atValue(at string) int {
 
 func stickerInner(s content.Sticker, typ string) string {
 	esc := template.HTMLEscapeString
+	var inner string
 	switch typ {
 	case "image":
 		cap := ""
 		if s.Text != "" {
 			cap = `<figcaption>` + esc(s.Text) + `</figcaption>`
 		}
-		return `<figure><img src="` + esc(s.Src) + `" alt="` + esc(s.Text) + `" loading="lazy">` + cap + `</figure>`
+		inner = `<figure><img src="` + esc(s.Src) + `" alt="` + esc(s.Text) + `" loading="lazy">` + cap + `</figure>`
 	case "label":
-		return `<span class="s-label">` + esc(s.Text) + `</span>`
+		inner = `<span class="s-label">` + esc(s.Text) + `</span>`
 	case "snippet":
-		return `<pre class="s-snip">` + esc(s.Text) + `</pre>`
+		inner = `<pre class="s-snip">` + esc(s.Text) + `</pre>`
 	default:
-		return `<p>` + esc(s.Text) + `</p>`
+		inner = `<p>` + esc(s.Text) + `</p>`
 	}
+	if s.Href != "" {
+		return `<a class="sticker-a" href="` + esc(s.Href) + `">` + inner + `</a>`
+	}
+	return inner
 }
 
 func listingHTML(entries []content.Doc) string {

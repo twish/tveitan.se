@@ -39,6 +39,7 @@ type Sticker struct {
 	Type   string // note | label | snippet | image
 	Text   string // note/label/snippet body, or image caption
 	Src    string // image source (type image)
+	Href   string // optional: makes the sticker a link
 	Side   string // left | right
 	At     string // vertical position down the article, e.g. "25%"
 	Rotate int    // tilt in degrees
@@ -123,6 +124,7 @@ type stickerFM struct {
 	Type   string `yaml:"type"`
 	Text   string `yaml:"text"`
 	Src    string `yaml:"src"`
+	Href   string `yaml:"href"`
 	Side   string `yaml:"side"`
 	At     any    `yaml:"at"` // "25%" or 25; normalized to a percent string
 	Rotate int    `yaml:"rotate"`
@@ -295,6 +297,7 @@ func stickers(in []stickerFM) []Sticker {
 			Type:   s.Type,
 			Text:   s.Text,
 			Src:    s.Src,
+			Href:   s.Href,
 			Side:   s.Side,
 			At:     atPercent(s.At),
 			Rotate: s.Rotate,

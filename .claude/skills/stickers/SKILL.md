@@ -35,6 +35,8 @@ Fields:
 - `type` — `note` | `label` | `snippet` | `image`
 - `text` — body for note/label/snippet; caption for image (supports `\n`)
 - `src` — image path for `image`; put files in `content/media/`, reference as `/media/<file>`
+- `href` — optional; makes the sticker a link. A linked image is treated as a
+  logo/icon (kept crisp with a neon glow, not the photo duotone).
 - `side` — `left` | `right` (which gutter); default right
 - `at` — vertical position down the article, e.g. `25%` or `25`; default `20%`
 - `rotate` — tilt in degrees, e.g. `-3`; keep it subtle (±5)
