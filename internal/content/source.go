@@ -29,6 +29,19 @@ type Doc struct {
 	Order  int  // sort weight in navigation; lower comes first
 	Draft  bool // excluded from List and Nav
 	Body   string
+
+	Stickers []Sticker // cassette-futurism margin elements; must be page-relevant
+}
+
+// Sticker is a margin element pinned beside the content: a relevant note, label,
+// pulled snippet, or image. Content, never decoration.
+type Sticker struct {
+	Type   string // note | label | snippet | image
+	Text   string // note/label/snippet body, or image caption
+	Src    string // image source (type image)
+	Side   string // left | right
+	At     string // vertical position down the article, e.g. "25%"
+	Rotate int    // tilt in degrees
 }
 
 // Source is everything the renderer needs from a content backend.
@@ -51,6 +64,17 @@ type frontmatter struct {
 	Date   string      `yaml:"date"`
 	Order  int         `yaml:"order"`
 	Draft  bool        `yaml:"draft"`
+
+	Stickers []stickerFM `yaml:"stickers"`
+}
+
+type stickerFM struct {
+	Type   string `yaml:"type"`
+	Text   string `yaml:"text"`
+	Src    string `yaml:"src"`
+	Side   string `yaml:"side"`
+	At     any    `yaml:"at"` // "25%" or 25; normalized to a percent string
+	Rotate int    `yaml:"rotate"`
 }
 
 // FSSource serves markdown from a directory tree of *.md files.
@@ -146,7 +170,39 @@ func (s *FSSource) read(path string) (Doc, error) {
 		Order:  fm.Order,
 		Draft:  fm.Draft,
 		Body:   string(body),
+		Stickers: stickers(fm.Stickers),
 	}, nil
+}
+
+func stickers(in []stickerFM) []Sticker {
+	var out []Sticker
+	for _, s := range in {
+		out = append(out, Sticker{
+			Type:   s.Type,
+			Text:   s.Text,
+			Src:    s.Src,
+			Side:   s.Side,
+			At:     atPercent(s.At),
+			Rotate: s.Rotate,
+		})
+	}
+	return out
+}
+
+// atPercent normalizes a vertical position to a CSS percent string; a bare
+// number becomes "<n>%".
+func atPercent(v any) string {
+	if v == nil {
+		return "20%"
+	}
+	s := strings.TrimSpace(fmt.Sprint(v))
+	if s == "" {
+		return "20%"
+	}
+	if !strings.Contains(s, "%") {
+		return s + "%"
+	}
+	return s
 }
 
 // styleString normalizes a loosely-typed frontmatter `style` (int or name) to a

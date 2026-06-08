@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +37,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/assets/", site.serveAsset)
+	mux.Handle("/media/", http.StripPrefix("/media/",
+		http.FileServer(http.Dir(filepath.Join(contentDir, "media")))))
 	mux.HandleFunc("/", site.servePage)
 
 	srv := &http.Server{

@@ -24,7 +24,10 @@ Create a new post for tveitan.se as a markdown file under `content/`.
    `asciify` skill to generate it.
 5. **Write the body.** Markdown. Open with the point, not a warm-up. Length
    follows substance. Real code only.
-6. **Don't deploy.** Writing the file is the whole job — the running server
+6. **Stickers (optional).** If the post has asides, a quotable line, or a
+   relevant image, add 1–3 via the `stickers` skill — but only if they're
+   genuinely relevant to the content, never as decoration.
+7. **Don't deploy.** Writing the file is the whole job — the running server
    renders it live on the next request. Mention the local URL
    (`/posts/<slug>`) so the user can preview.
 

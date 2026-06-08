@@ -177,7 +177,7 @@ nav a {
 
 nav a:hover { color: var(--neon-pink); text-shadow: var(--glow); }
 
-article { color: var(--fg); }
+article { color: var(--fg); position: relative; }
 
 article h1, article h2, article h3 {
 	color: var(--neon-purp);
@@ -232,6 +232,93 @@ article hr {
 		var(--hazard-yellow) 0 10px,
 		var(--hazard-dark) 10px 20px
 	);
+}
+
+/* stickers — cassette-futurism margin elements. On wide screens they sit in
+   the empty gutters beside the column, tilted, with hazard-tape across the top
+   like they're taped on. Below 1200px there's no gutter, so they collapse into
+   a stacked row at the end of the article. */
+.sticker {
+	position: absolute;
+	top: var(--at, 20%);
+	width: 200px;
+	padding: 0.7rem 0.8rem;
+	transform: rotate(var(--rot, 0deg));
+	background: rgba(10, 2, 20, 0.88);
+	border: 1px solid rgba(255, 214, 10, 0.4);
+	box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+	font-family: var(--mono);
+	font-size: 0.78rem;
+	line-height: 1.5;
+	color: var(--fg);
+}
+
+.sticker.side-right { left: 100%; margin-left: 2rem; }
+.sticker.side-left  { right: 100%; margin-right: 2rem; }
+
+/* hazard tape holding the sticker on */
+.sticker::before {
+	content: "";
+	position: absolute;
+	top: -6px;
+	left: 12px;
+	right: 12px;
+	height: 6px;
+	background-image: repeating-linear-gradient(
+		45deg,
+		var(--hazard-yellow) 0 8px,
+		var(--hazard-dark) 8px 16px
+	);
+}
+
+.sticker p { margin: 0; }
+
+.s-label {
+	display: block;
+	color: var(--hazard-yellow);
+	text-transform: uppercase;
+	letter-spacing: 0.12em;
+	font-weight: 700;
+}
+
+.s-snip {
+	margin: 0;
+	white-space: pre-wrap;
+	font-size: 0.72rem;
+	color: var(--neon-cyan);
+}
+
+.sticker-image { padding: 0.4rem; }
+
+.sticker-image figure { margin: 0; }
+
+.sticker-image img {
+	display: block;
+	width: 100%;
+	filter: grayscale(0.5) contrast(1.1) saturate(1.2) brightness(0.95);
+}
+
+.sticker-image figcaption {
+	margin-top: 0.45rem;
+	font-size: 0.7rem;
+	color: var(--muted);
+}
+
+@media (max-width: 1200px) {
+	.stickers {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		margin-top: 2.5rem;
+	}
+	.sticker {
+		position: static;
+		width: auto;
+		flex: 1 1 200px;
+		transform: none;
+	}
+	.sticker.side-left,
+	.sticker.side-right { margin: 0; }
 }
 
 footer {

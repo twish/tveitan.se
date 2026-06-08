@@ -30,9 +30,14 @@ banner: |        # optional verbatim ascii; omit to figlet the title
 placement); omit it and a stable style is derived from the slug. Browse all 60
 at `/styles`.
 
+Pages can carry **stickers** — cassette-futurism margin elements (note, label,
+snippet, image) pinned in the gutters, styled with yellow-black hazard tape.
+They must be content-relevant, never decoration. Add via frontmatter; images go
+in `content/media/` (served at `/media`). See `.claude/skills/stickers`.
+
 Or let an agent write it: the `new-post` skill drafts in the voice defined in
-`.claude/skills/voice.md`, and `asciify` makes ascii banners. Tweak `voice.md`
-for tone, `theme/synthwave.css` for look.
+`.claude/skills/voice.md`, `asciify` makes ascii banners, and `stickers` adds
+margin elements. Tweak `voice.md` for tone, `theme/synthwave.css` for look.
 
 ## Layout
 

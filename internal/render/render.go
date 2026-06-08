@@ -159,6 +159,7 @@ func (r *Renderer) Build(docs []content.Doc) (*Built, error) {
 func (r *Renderer) page(tmpl *template.Template, doc content.Doc, body template.HTML, cssHref string, nav []navItem) (string, error) {
 	st := selectStyle(doc)
 	banner := r.banner(doc, st)
+	body += template.HTML(stickersHTML(doc.Stickers))
 	data := pageData{
 		Title:   doc.Title,
 		Banner:  banner,
@@ -227,6 +228,51 @@ func (r *Renderer) galleryBody() template.HTML {
 	}
 	b.WriteString(`</div>`)
 	return template.HTML(b.String())
+}
+
+// stickersHTML renders the margin elements. They live inside <article> and are
+// absolutely positioned into the gutters on wide screens, collapsing to a
+// stacked list on narrow ones (see CSS).
+func stickersHTML(stk []content.Sticker) string {
+	if len(stk) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(`<div class="stickers">`)
+	for _, s := range stk {
+		side := "right"
+		if s.Side == "left" {
+			side = "left"
+		}
+		typ := s.Type
+		if typ == "" {
+			typ = "note"
+		}
+		fmt.Fprintf(&b, `<aside class="sticker sticker-%s side-%s" style="--at:%s;--rot:%ddeg">`,
+			template.HTMLEscapeString(typ), side, template.HTMLEscapeString(s.At), s.Rotate)
+		b.WriteString(stickerInner(s, typ))
+		b.WriteString(`</aside>`)
+	}
+	b.WriteString(`</div>`)
+	return b.String()
+}
+
+func stickerInner(s content.Sticker, typ string) string {
+	esc := template.HTMLEscapeString
+	switch typ {
+	case "image":
+		cap := ""
+		if s.Text != "" {
+			cap = `<figcaption>` + esc(s.Text) + `</figcaption>`
+		}
+		return `<figure><img src="` + esc(s.Src) + `" alt="` + esc(s.Text) + `" loading="lazy">` + cap + `</figure>`
+	case "label":
+		return `<span class="s-label">` + esc(s.Text) + `</span>`
+	case "snippet":
+		return `<pre class="s-snip">` + esc(s.Text) + `</pre>`
+	default:
+		return `<p>` + esc(s.Text) + `</p>`
+	}
 }
 
 func buildNav(docs []content.Doc) []navItem {

@@ -2,6 +2,11 @@
 title: Hello, neon world
 date: 2026-06-07
 order: 1
+stickers:
+  - {type: image, src: /media/horizon.svg, text: "synthwave horizon", side: right, at: 10%, rotate: -3}
+  - {type: label, text: "// first post", side: left, at: 16%, rotate: 2}
+  - {type: note, text: "no build step — drop a markdown file in a folder and it's live on the next request.", side: right, at: 52%, rotate: 2}
+  - {type: snippet, text: "neon on black,\nscanlines,\na grid to the horizon", side: left, at: 62%, rotate: -2}
 ---
 
 # Hello, neon world
