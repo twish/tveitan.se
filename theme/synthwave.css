@@ -33,26 +33,6 @@ body {
 	overflow-x: hidden;
 }
 
-/* yellow-black hazard tape — the recurring identity motif (Häcken / Västra
-   Götaland / warning-tape cassette-futurism). Reused for the top strip,
-   dividers, and later sticker "tape". */
-.hazard {
-	background-image: repeating-linear-gradient(
-		45deg,
-		var(--hazard-yellow) 0 3px,
-		transparent 3px 16px
-	);
-}
-
-.hazard-top {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: 5px;
-	z-index: 10;
-}
-
 /* CRT flicker bars layered over everything */
 .scanlines {
 	position: fixed;
