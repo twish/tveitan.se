@@ -38,11 +38,17 @@ Fields:
 - `side` — `left` | `right` (which gutter); default right
 - `at` — vertical position down the article, e.g. `25%` or `25`; default `20%`
 - `rotate` — tilt in degrees, e.g. `-3`; keep it subtle (±5)
+- `size` — `sm` | `md` | `lg`; default `md`. Let an important sticker be `lg`.
+- `gap` — distance from the text column, e.g. `3rem` / `5rem`; default `3.5rem`.
+  Vary it a little between stickers so they don't sit on a rigid line.
 
 ## Layout notes
 
-- On wide screens stickers sit in the gutters beside the column; below 1200px
-  they collapse into a stacked row at the end of the article. Design for both.
-- Stagger `at` values so stickers on the same side don't overlap.
+- Stickers are pinned in the gutters and stay there. When the window is too
+  narrow to fit one, it's hidden (per size: sm < 1180px, md < 1280px,
+  lg < 1460px) rather than reflowing — so they never cross the text or scroll.
+- Because they hide on small screens, never put information that exists *only*
+  in a sticker — the body must stand alone.
+- Stagger `at` values so stickers on the same side don't overlap; vary `gap`.
 - Images are auto-tinted to fit the palette — pick images that read at ~200px wide.
 - Don't deploy; the running server renders on the next request.

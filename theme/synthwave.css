@@ -240,7 +240,7 @@ article hr {
 .sticker {
 	position: absolute;
 	top: var(--at, 20%);
-	width: 200px;
+	width: var(--w, 210px);
 	padding: 0.7rem 0.8rem;
 	transform: rotate(var(--rot, 0deg));
 	background: rgba(10, 2, 20, 0.88);
@@ -252,8 +252,12 @@ article hr {
 	color: var(--fg);
 }
 
-.sticker.side-right { left: 100%; margin-left: 2rem; }
-.sticker.side-left  { right: 100%; margin-right: 2rem; }
+.sticker.size-sm { --w: 160px; font-size: 0.72rem; }
+.sticker.size-md { --w: 210px; }
+.sticker.size-lg { --w: 300px; font-size: 0.82rem; }
+
+.sticker.side-right { left: 100%; margin-left: var(--gap, 3.5rem); }
+.sticker.side-left  { right: 100%; margin-right: var(--gap, 3.5rem); }
 
 .sticker p { margin: 0; }
 
@@ -288,22 +292,13 @@ article hr {
 	color: var(--muted);
 }
 
-@media (max-width: 1200px) {
-	.stickers {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1rem;
-		margin-top: 2.5rem;
-	}
-	.sticker {
-		position: static;
-		width: auto;
-		flex: 1 1 200px;
-		transform: none;
-	}
-	.sticker.side-left,
-	.sticker.side-right { margin: 0; }
-}
+/* Stickers stay pinned in the gutters. When the window is too narrow for the
+   gutter to hold a sticker without crossing the text or causing a horizontal
+   scroll, hide it instead of reflowing — per size, since wider ones need more
+   room. (Mobile rendering is handled separately.) */
+@media (max-width: 1180px) { .sticker.size-sm { display: none; } }
+@media (max-width: 1280px) { .sticker.size-md { display: none; } }
+@media (max-width: 1460px) { .sticker.size-lg { display: none; } }
 
 footer {
 	margin-top: 4rem;

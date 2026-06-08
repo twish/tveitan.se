@@ -42,6 +42,8 @@ type Sticker struct {
 	Side   string // left | right
 	At     string // vertical position down the article, e.g. "25%"
 	Rotate int    // tilt in degrees
+	Size   string // sm | md | lg
+	Gap    string // distance from the text column, e.g. "4rem"; varies the spacing
 }
 
 // Source is everything the renderer needs from a content backend.
@@ -75,6 +77,8 @@ type stickerFM struct {
 	Side   string `yaml:"side"`
 	At     any    `yaml:"at"` // "25%" or 25; normalized to a percent string
 	Rotate int    `yaml:"rotate"`
+	Size   string `yaml:"size"`
+	Gap    string `yaml:"gap"`
 }
 
 // FSSource serves markdown from a directory tree of *.md files.
@@ -184,6 +188,8 @@ func stickers(in []stickerFM) []Sticker {
 			Side:   s.Side,
 			At:     atPercent(s.At),
 			Rotate: s.Rotate,
+			Size:   s.Size,
+			Gap:    s.Gap,
 		})
 	}
 	return out

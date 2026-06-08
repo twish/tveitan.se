@@ -248,8 +248,17 @@ func stickersHTML(stk []content.Sticker) string {
 		if typ == "" {
 			typ = "note"
 		}
-		fmt.Fprintf(&b, `<aside class="sticker sticker-%s side-%s" style="--at:%s;--rot:%ddeg">`,
-			template.HTMLEscapeString(typ), side, template.HTMLEscapeString(s.At), s.Rotate)
+		size := s.Size
+		if size != "sm" && size != "lg" {
+			size = "md"
+		}
+		gap := s.Gap
+		if gap == "" {
+			gap = "3.5rem"
+		}
+		fmt.Fprintf(&b, `<aside class="sticker sticker-%s side-%s size-%s" style="--at:%s;--rot:%ddeg;--gap:%s">`,
+			template.HTMLEscapeString(typ), side, size,
+			template.HTMLEscapeString(s.At), s.Rotate, template.HTMLEscapeString(gap))
 		b.WriteString(stickerInner(s, typ))
 		b.WriteString(`</aside>`)
 	}
