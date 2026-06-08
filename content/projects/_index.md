@@ -8,6 +8,7 @@ home:
   mode: pinned
   pinned:
     - projects/kbmkr
+    - projects/tveitan.se
 ---
 
 Things I build.
