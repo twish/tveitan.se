@@ -50,6 +50,8 @@ Fields:
   sorted into reading order by `at` — never crossing the text or scrolling.
 - The body must still stand alone: a sticker enriches the page, it isn't the
   only place a fact lives.
-- Stagger `at` values so stickers on the same side don't overlap; vary `gap`.
+- Stagger `at` values and vary `gap` for a natural scatter. A small collision
+  pass auto-nudges same-side stickers apart if they'd overlap too much, so you
+  don't have to compute heights — but rough staggering still reads best.
 - Images are auto-tinted to fit the palette — pick images that read at ~200px wide.
 - Don't deploy; the running server renders on the next request.

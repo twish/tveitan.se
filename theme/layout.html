@@ -24,5 +24,40 @@
 			<span>// tveitan.se</span>
 		</footer>
 	</main>
+	<script>
+	// Sticker collision pass: stickers are placed by a fixed vertical position
+	// (--at) that ignores their height, so two on the same side can overlap.
+	// Measure each side top-to-bottom and push any that overlap a neighbour by
+	// more than ALLOW pixels down, leaving a small intentional overlap so they
+	// still read as layered. Text is untouched — stickers live in the gutters.
+	(() => {
+		const ALLOW = 16; // px stickers may overlap a neighbour
+		function layout() {
+			const all = [...document.querySelectorAll('.sticker')];
+			if (!all.length) return;
+			all.forEach(s => { s.style.top = ''; }); // revert to CSS --at
+			for (const side of ['left', 'right']) {
+				const items = all
+					.filter(s => s.classList.contains('side-' + side)
+						&& getComputedStyle(s).position === 'absolute')
+					.sort((a, b) => a.offsetTop - b.offsetTop);
+				let prevBottom = -1e9;
+				for (const s of items) {
+					let top = s.offsetTop;
+					const minTop = prevBottom - ALLOW;
+					if (top < minTop) { top = minTop; s.style.top = top + 'px'; }
+					prevBottom = top + s.offsetHeight;
+				}
+			}
+		}
+		let t;
+		const relayout = () => { clearTimeout(t); t = setTimeout(layout, 80); };
+		window.addEventListener('load', layout);
+		window.addEventListener('resize', relayout);
+		document.querySelectorAll('.sticker img').forEach(img => {
+			if (!img.complete) img.addEventListener('load', layout);
+		});
+	})();
+	</script>
 </body>
 </html>
