@@ -228,6 +228,11 @@ func stickersHTML(stk []content.Sticker) string {
 		if typ == "" {
 			typ = "note"
 		}
+		// "github" is an image preset (tinted logo + repo link); style it as an image.
+		class := typ
+		if typ == "github" {
+			class = "image"
+		}
 		size := s.Size
 		if size != "sm" && size != "lg" {
 			size = "md"
@@ -241,13 +246,20 @@ func stickersHTML(stk []content.Sticker) string {
 			linked = " linked"
 		}
 		fmt.Fprintf(&b, `<aside class="sticker sticker-%s side-%s size-%s%s" style="--at:%s;--rot:%ddeg;--gap:%s">`,
-			template.HTMLEscapeString(typ), side, size, linked,
+			template.HTMLEscapeString(class), side, size, linked,
 			template.HTMLEscapeString(s.At), s.Rotate, template.HTMLEscapeString(gap))
 		b.WriteString(stickerInner(s, typ))
 		b.WriteString(`</aside>`)
 	}
 	b.WriteString(`</div>`)
 	return b.String()
+}
+
+// trimScheme drops a leading http(s):// and any trailing slash for display.
+func trimScheme(url string) string {
+	url = strings.TrimPrefix(url, "https://")
+	url = strings.TrimPrefix(url, "http://")
+	return strings.TrimRight(url, "/")
 }
 
 // atValue parses the leading number out of an "NN%" position for sorting.
@@ -260,6 +272,14 @@ func stickerInner(s content.Sticker, typ string) string {
 	esc := template.HTMLEscapeString
 	var inner string
 	switch typ {
+	case "github":
+		// Reusable preset: the tinted GitHub mark + a caption (the repo, derived
+		// from the href if not given). Expects the logo at /media/github.svg.
+		cap := s.Text
+		if cap == "" {
+			cap = trimScheme(s.Href)
+		}
+		inner = `<figure><img src="/media/github.svg" alt="` + esc(cap) + `" loading="lazy"><figcaption>` + esc(cap) + `</figcaption></figure>`
 	case "image":
 		cap := ""
 		if s.Text != "" {

@@ -5,7 +5,7 @@ stickers:
   - {type: label, text: "// go · markdown · no db", side: left, at: 12%, rotate: -2, size: sm, gap: 4.5rem}
   - {type: snippet, text: "render.New(theme,\n  WithHeading(ascii),\n  WithNav(unix),\n)", side: right, at: 15%, rotate: -3, size: md, gap: 3rem}
   - {type: note, text: "engine lives in pkg/, the synthwave half in internal/ — someone could bolt their own look on top.", side: left, at: 50%, rotate: 2, size: md, gap: 3.5rem}
-  - {type: image, src: /media/github.svg, text: "github.com/twish/tveitan.se", href: "https://github.com/twish/tveitan.se", side: right, at: 56%, rotate: -3, size: md, gap: 3.5rem}
+  - {type: github, href: "https://github.com/twish/tveitan.se", side: right, at: 56%, rotate: -3, size: md, gap: 3.5rem}
 ---
 
 # tveitan.se

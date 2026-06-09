@@ -32,7 +32,11 @@ stickers:
 ```
 
 Fields:
-- `type` — `note` | `label` | `snippet` | `image`
+- `type` — `note` | `label` | `snippet` | `image` | `github`
+  - `github` is a reusable preset: the tinted GitHub mark linking to a repo.
+    Just give it `href` (the repo URL); the caption defaults to the URL.
+    Placement / `rotate` / `size` vary per use like any sticker. Expects the
+    logo at `content/media/github.svg`.
 - `text` — body for note/label/snippet; caption for image (supports `\n`)
 - `src` — image path for `image`; put files in `content/media/`, reference as `/media/<file>`
 - `href` — optional; makes the sticker a link. A linked image is treated as a
