@@ -17,12 +17,16 @@
 	</main>
 	<script>
 	// Sticker collision pass: stickers are placed by a fixed vertical position
-	// (--at) that ignores their height, so two on the same side can overlap.
-	// Measure each side top-to-bottom and push any that overlap a neighbour by
-	// more than ALLOW pixels down, leaving a small intentional overlap so they
-	// still read as layered. Text is untouched — stickers live in the gutters.
+	// (--at) that ignores their height, so two on the same side can collide.
+	// Measure each side top-to-bottom and push the lower one down. A partial
+	// overlap only looks intentional when the two are tilted differently — so
+	// allow overlap when their rotations differ, and force a gap when they're
+	// near-parallel (otherwise it reads as a broken stack). Text is untouched.
 	(() => {
-		const ALLOW = 16; // px stickers may overlap a neighbour
+		const OVERLAP = 22;     // px two differently-tilted stickers may overlap
+		const GAP = 14;         // px gap forced between near-parallel stickers
+		const ROT_DIFF = 3;     // deg difference to count as "different rotation"
+		const rotOf = (s) => parseFloat(s.style.getPropertyValue('--rot')) || 0;
 		function layout() {
 			const all = [...document.querySelectorAll('.sticker')];
 			if (!all.length) return;
@@ -32,12 +36,16 @@
 					.filter(s => s.classList.contains('side-' + side)
 						&& getComputedStyle(s).position === 'absolute')
 					.sort((a, b) => a.offsetTop - b.offsetTop);
-				let prevBottom = -1e9;
+				let prevBottom = -1e9, prevRot = 0;
 				for (const s of items) {
+					const rot = rotOf(s);
+					const differ = Math.abs(rot - prevRot) >= ROT_DIFF;
+					const allow = differ ? OVERLAP : -GAP; // negative = enforce a gap
 					let top = s.offsetTop;
-					const minTop = prevBottom - ALLOW;
+					const minTop = prevBottom - allow;
 					if (top < minTop) { top = minTop; s.style.top = top + 'px'; }
 					prevBottom = top + s.offsetHeight;
+					prevRot = rot;
 				}
 			}
 		}
