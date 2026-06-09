@@ -58,6 +58,7 @@ title: Short, lowercase-ish, no clickbait
 date: YYYY-MM-DD
 order: <int>   # nav/sort weight; lower first
 style: <0-59>  # optional; frozen heading style. Omit to derive from slug.
+summary: ...   # optional one-line description for /llms.txt (else first body line)
 banner: |      # optional verbatim ascii; omit to figlet the title
 ---
 ```

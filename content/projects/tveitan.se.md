@@ -1,6 +1,7 @@
 ---
 title: tveitan.se
 order: 2
+summary: this site — a tiny markdown-rendering Go engine wearing synthwave.
 stickers:
   - {type: label, text: "// go · markdown · no db", side: left, at: 12%, rotate: -2, size: sm, gap: 4.5rem}
   - {type: snippet, text: "render.New(theme,\n  WithHeading(ascii),\n  WithNav(unix),\n)", side: right, at: 15%, rotate: -3, size: md, gap: 3rem}

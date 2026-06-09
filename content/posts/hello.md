@@ -2,6 +2,7 @@
 title: Hello, neon world
 date: 2026-06-07
 order: 1
+summary: first post — why the rebuilt site is a tiny Go server that renders markdown live.
 stickers:
   - {type: image, src: /media/horizon.svg, text: "synthwave horizon", side: right, at: 8%, rotate: -3, size: lg, gap: 3rem}
   - {type: label, text: "// first post", side: left, at: 14%, rotate: 2, size: sm, gap: 5rem}

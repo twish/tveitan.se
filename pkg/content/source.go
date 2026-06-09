@@ -23,9 +23,10 @@ import (
 type Doc struct {
 	Slug   string // url path without extension, e.g. "index" or "posts/hello"
 	Title  string
-	Banner string // literal ascii art to use verbatim; empty means figlet the title
-	Style  string // frozen heading style: index or name; empty means derive from slug
-	Date   string
+	Banner  string // literal ascii art to use verbatim; empty means figlet the title
+	Style   string // frozen heading style: index or name; empty means derive from slug
+	Summary string // one-line description (used by /llms.txt); empty means derive from body
+	Date    string
 	Order  int  // sort weight in navigation; lower comes first
 	Draft  bool // excluded from List and Nav
 	Body   string
@@ -112,8 +113,9 @@ type frontmatter struct {
 	Banner string `yaml:"banner"`
 	// Style accepts either an int index (style: 23) or a name (style: slant-sunset),
 	// so it's read loosely and normalized to a string.
-	Style  any `yaml:"style"`
-	Date   string      `yaml:"date"`
+	Style   any    `yaml:"style"`
+	Summary string `yaml:"summary"`
+	Date    string `yaml:"date"`
 	Order  int         `yaml:"order"`
 	Draft  bool        `yaml:"draft"`
 
@@ -280,9 +282,10 @@ func (s *FSSource) read(path string) (Doc, error) {
 	return Doc{
 		Slug:   slug,
 		Title:  title,
-		Banner: fm.Banner,
-		Style:  styleString(fm.Style),
-		Date:   fm.Date,
+		Banner:  fm.Banner,
+		Style:   styleString(fm.Style),
+		Summary: fm.Summary,
+		Date:    fm.Date,
 		Order:  fm.Order,
 		Draft:  fm.Draft,
 		Body:   string(body),

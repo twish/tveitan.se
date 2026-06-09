@@ -2,6 +2,7 @@
 title: kbmkr
 order: 1
 style: ansi-shadow-teal-purple
+summary: desktop-native keyboard-design toolkit wrapping Ergogen, with CLI + MCP.
 stickers:
   - {type: github, href: "https://github.com/twish/kbmkr", side: right, at: 18%, rotate: 4, size: lg, gap: 3rem}
 ---

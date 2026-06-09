@@ -62,6 +62,15 @@ func (r *Renderer) artifacts(docs []content.Doc, sections []content.Section, cfg
 
 func link(cfg SiteConfig, slug string) string { return cfg.BaseURL + "/" + slug }
 
+// entrySummary prefers a hand-written frontmatter summary, falling back to the
+// first content line of the body.
+func entrySummary(d content.Doc) string {
+	if d.Summary != "" {
+		return d.Summary
+	}
+	return summary(d.Body)
+}
+
 // summary is the first non-heading, non-empty line of a doc, trimmed — a rough
 // one-line description for the llms.txt index.
 func summary(body string) string {
@@ -99,14 +108,14 @@ func llmsTxt(docs []content.Doc, sections []content.Section, cfg SiteConfig) str
 	if len(pages) > 0 {
 		b.WriteString("\n## Pages\n\n")
 		for _, d := range pages {
-			fmt.Fprintf(&b, "- [%s](%s): %s\n", d.Title, link(cfg, d.Slug), summary(d.Body))
+			fmt.Fprintf(&b, "- [%s](%s): %s\n", d.Title, link(cfg, d.Slug), entrySummary(d))
 		}
 	}
 
 	for _, s := range sortByOrder(sections) {
 		fmt.Fprintf(&b, "\n## %s\n\n", s.Title)
 		for _, d := range content.Entries(s, docs) {
-			fmt.Fprintf(&b, "- [%s](%s): %s\n", d.Title, link(cfg, d.Slug), summary(d.Body))
+			fmt.Fprintf(&b, "- [%s](%s): %s\n", d.Title, link(cfg, d.Slug), entrySummary(d))
 		}
 	}
 	return b.String()
