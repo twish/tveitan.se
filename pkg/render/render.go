@@ -56,12 +56,13 @@ type Built struct {
 }
 
 type pageData struct {
-	Title   string
-	Heading template.HTML
-	Nav     template.HTML
-	Body    template.HTML
-	Footer  template.HTML
-	CSSHref string
+	Title       string
+	Description string
+	Heading     template.HTML
+	Nav         template.HTML
+	Body        template.HTML
+	Footer      template.HTML
+	CSSHref     string
 }
 
 // Renderer orchestrates a page: markdown body + pluggable heading/nav/footer.
@@ -145,7 +146,7 @@ func (r *Renderer) Build(docs []content.Doc, sections []content.Section, cfg Sit
 		if doc.Slug == "index" {
 			body += template.HTML(homeBlocksHTML(sections, docs))
 		}
-		page, err := r.page(tmpl, doc, body, cssHref, docs, sections)
+		page, err := r.page(tmpl, doc, body, cssHref, docs, sections, cfg.Description)
 		if err != nil {
 			return nil, fmt.Errorf("render %s: %w", doc.Slug, err)
 		}
@@ -159,8 +160,8 @@ func (r *Renderer) Build(docs []content.Doc, sections []content.Section, cfg Sit
 			return nil, fmt.Errorf("render section %s: %w", sec.Slug, err)
 		}
 		body := intro + template.HTML(listingHTML(content.Entries(sec, docs)))
-		doc := content.Doc{Slug: sec.Slug, Title: sec.Title, Banner: sec.Banner, Style: sec.Style}
-		page, err := r.page(tmpl, doc, body, cssHref, docs, sections)
+		doc := content.Doc{Slug: sec.Slug, Title: sec.Title, Banner: sec.Banner, Style: sec.Style, Summary: summary(sec.Body)}
+		page, err := r.page(tmpl, doc, body, cssHref, docs, sections, cfg.Description)
 		if err != nil {
 			return nil, fmt.Errorf("render section %s: %w", sec.Slug, err)
 		}
@@ -168,7 +169,7 @@ func (r *Renderer) Build(docs []content.Doc, sections []content.Section, cfg Sit
 	}
 
 	for _, ep := range r.extra {
-		page, err := r.page(tmpl, ep.Doc, ep.Body, cssHref, docs, sections)
+		page, err := r.page(tmpl, ep.Doc, ep.Body, cssHref, docs, sections, cfg.Description)
 		if err != nil {
 			return nil, fmt.Errorf("render extra %s: %w", ep.Doc.Slug, err)
 		}
@@ -185,15 +186,20 @@ func (r *Renderer) Build(docs []content.Doc, sections []content.Section, cfg Sit
 
 // page renders one doc through the layout, asking the heading/nav/footer
 // renderers for their markup.
-func (r *Renderer) page(tmpl *template.Template, doc content.Doc, body template.HTML, cssHref string, docs []content.Doc, sections []content.Section) (string, error) {
+func (r *Renderer) page(tmpl *template.Template, doc content.Doc, body template.HTML, cssHref string, docs []content.Doc, sections []content.Section, siteDesc string) (string, error) {
+	desc := entrySummary(doc)
+	if desc == "" {
+		desc = siteDesc
+	}
 	body += template.HTML(stickersHTML(doc.Stickers))
 	data := pageData{
-		Title:   doc.Title,
-		Heading: r.heading.Heading(doc),
-		Nav:     r.nav.Nav(doc.Slug, docs, sections),
-		Body:    body,
-		Footer:  r.footer.Footer(docs, sections),
-		CSSHref: cssHref,
+		Title:       doc.Title,
+		Description: desc,
+		Heading:     r.heading.Heading(doc),
+		Nav:         r.nav.Nav(doc.Slug, docs, sections),
+		Body:        body,
+		Footer:      r.footer.Footer(docs, sections),
+		CSSHref:     cssHref,
 	}
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {
