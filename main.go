@@ -9,6 +9,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"log"
 	"net/http"
 	"os"
@@ -41,8 +43,9 @@ func main() {
 		log.Fatal(err)
 	}
 	app := &server{
-		source:   content.NewFSSource(contentDir),
-		renderer: renderer,
+		source:     content.NewFSSource(contentDir),
+		renderer:   renderer,
+		configPath: filepath.Join(contentDir, "site.yaml"),
 	}
 
 	mux := http.NewServeMux()
@@ -65,8 +68,9 @@ func main() {
 // server holds the content source, renderer, and the cached render of the current
 // version. current() rebuilds lazily when the version changes.
 type server struct {
-	source   content.Source
-	renderer *render.Renderer
+	source     content.Source
+	renderer   *render.Renderer
+	configPath string
 
 	mu      sync.RWMutex
 	version string
@@ -84,7 +88,11 @@ func (s *server) current(ctx context.Context) (string, *render.Built, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	version := contentVer + "." + themeVer
+	// site.yaml is read live and folded into the version, so toggling artifacts
+	// takes effect on the next request without a restart. Missing file is fine.
+	cfgData, _ := os.ReadFile(s.configPath)
+	configVer := hex.EncodeToString(sha256Of(cfgData))[:12]
+	version := contentVer + "." + themeVer + "." + configVer
 
 	s.mu.RLock()
 	if s.version == version && s.built != nil {
@@ -102,7 +110,7 @@ func (s *server) current(ctx context.Context) (string, *render.Built, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	built, err := s.renderer.Build(docs, sections)
+	built, err := s.renderer.Build(docs, sections, render.ParseConfig(cfgData))
 	if err != nil {
 		return "", nil, err
 	}
@@ -119,6 +127,21 @@ func (s *server) servePage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("render: %v", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// Machine-friendly artifacts (llms.txt, /<slug>.md, sitemap.xml, robots.txt)
+	// are served by exact path before the HTML page lookup.
+	if f, ok := built.Files[r.URL.Path]; ok {
+		etag := `"` + version + r.URL.Path + `"`
+		w.Header().Set("ETag", etag)
+		w.Header().Set("Cache-Control", "no-cache")
+		if match := r.Header.Get("If-None-Match"); match == etag {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+		w.Header().Set("Content-Type", f.ContentType)
+		w.Write(f.Body)
 		return
 	}
 
@@ -168,6 +191,11 @@ func (s *server) serveAsset(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/css; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 	w.Write(built.CSS)
+}
+
+func sha256Of(b []byte) []byte {
+	sum := sha256.Sum256(b)
+	return sum[:]
 }
 
 func env(key, fallback string) string {

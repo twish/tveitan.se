@@ -105,6 +105,27 @@ r, _ := render.New("theme", render.WithNav(MyNav{}))
 Background and the content-area wrapper are theme concerns (`theme/`), not Go
 seams — swap the theme to change them.
 
+## Machine-friendly output
+
+The engine emits LLM/crawler-friendly artifacts, toggled live via
+`content/site.yaml` (read into the cache version — edit it, changes take effect
+on the next request, no restart):
+
+- `/llms.txt` — curated markdown index ([llmstxt.org](https://llmstxt.org))
+- `/<slug>.md` — the raw markdown source of any page
+- `/sitemap.xml` and `/robots.txt`
+
+```yaml
+# content/site.yaml
+name: tveitan.se
+description: …
+base_url: https://tveitan.se
+llms_txt: true
+raw_markdown: true
+sitemap: true
+robots: true
+```
+
 ## Deploy
 
 Runs as a container behind a reverse proxy with automatic TLS.

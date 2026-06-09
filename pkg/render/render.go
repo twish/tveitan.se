@@ -50,6 +50,7 @@ type ExtraPage struct {
 // version. Pages are keyed by slug. Everything here is immutable once returned.
 type Built struct {
 	Pages   map[string]string
+	Files   map[string]File // machine-friendly artifacts (llms.txt, *.md, sitemap…), keyed by URL path
 	CSS     []byte
 	CSSHref string
 }
@@ -122,7 +123,7 @@ func (r *Renderer) ThemeVersion() (string, error) {
 
 // Build renders every doc, section listing, and injected extra page into a full
 // HTML page. Callers gate it behind a version check so it only runs on change.
-func (r *Renderer) Build(docs []content.Doc, sections []content.Section) (*Built, error) {
+func (r *Renderer) Build(docs []content.Doc, sections []content.Section, cfg SiteConfig) (*Built, error) {
 	css, err := os.ReadFile(filepath.Join(r.themeDir, "synthwave.css"))
 	if err != nil {
 		return nil, fmt.Errorf("read css: %w", err)
@@ -174,7 +175,12 @@ func (r *Renderer) Build(docs []content.Doc, sections []content.Section) (*Built
 		pages[ep.Doc.Slug] = page
 	}
 
-	return &Built{Pages: pages, CSS: css, CSSHref: cssHref}, nil
+	return &Built{
+		Pages:   pages,
+		Files:   r.artifacts(docs, sections, cfg),
+		CSS:     css,
+		CSSHref: cssHref,
+	}, nil
 }
 
 // page renders one doc through the layout, asking the heading/nav/footer

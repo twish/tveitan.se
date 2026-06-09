@@ -1,0 +1,10 @@
+# Site config — read live (folded into the cache version), so changes here take
+# effect on the next request, no restart. Toggle the machine-friendly artifacts.
+name: tveitan.se
+description: Johannes Tveitan — notes, projects, and a bit of synthwave nonsense.
+base_url: https://tveitan.se
+
+llms_txt: true       # /llms.txt  — curated markdown index
+raw_markdown: true   # /<slug>.md — raw source per page
+sitemap: true        # /sitemap.xml
+robots: true         # /robots.txt (+ sitemap pointer)

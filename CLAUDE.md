@@ -29,6 +29,8 @@ both tweakable knobs.
   Wired into the engine in `main.go` via `render.With…` options.
 - `theme/` — `layout.html` + `synthwave.css`, edited live (no rebuild). The look knob.
 - `content/` — all pages as markdown + frontmatter. `index.md` is the homepage.
+- `content/site.yaml` — live-read site config toggling the machine-friendly
+  artifacts: `/llms.txt`, raw `/<slug>.md`, `/sitemap.xml`, `/robots.txt`.
 - `.claude/skills/` — `voice.md` (the words knob) + `new-post` / `asciify`
   skills that author content in that voice.
 
